@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <script src="js/common.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>농장설정 · 강북구 스마트팜</title>
+  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="icon" href="data:;base64,=">
+  <style>
+    /* ✅ 전체 페이지 배경 — 급액기준등록과 완전 동일 */
+    body {
+      background: none;
+      background-color: #f5f5f5;
+    }
+    body::before { display: none; }
+    /* ✅ TOP바 — 급액기준등록과 완전 동일 */
+    .top-header {
+      background: 
+        linear-gradient(rgba(47, 70, 56, 0.55), rgba(5, 8, 6, 0.55)),
+        url("https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNjA4MThfMjgy%2FMDAxNzg3MDM3MjU3NDA2.4ypGxvywbosdDIW5SOx70sO59WN6BiVoJx9jyh6zm9kg.0yvw-6Je2OJWoG0uXfYA9QuhnJz2nUkA_BH2oqEjv0Yg.JPEG%2F_CYL7346.jpg&type=a340") no-repeat center center !important;
+      background-size: cover !important;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .header-title {
+      color: #fffacf !important;
+      font-weight: bold;
+      font-size: 18px !important;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .top-meta {
+      font-size: 11.5px;
+      color: #faf9d6;
+      margin-top: 2px;
+      line-height: 1.4;
+      opacity: 0.95;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+    .top-meta span { display: inline-block; margin-right: 14px; }
+    /* ✅ 권한 메뉴 */
+    .sidebar-menu a { display: none; }
+    .sidebar-menu a.visible { display: block; }
+    /* ✅ 사용자 정보 박스 — 급액기준등록과 완전 동일 */
+    .user-info-box {
+      background: rgba(0, 70, 27, 0.4);
+      backdrop-filter: blur(4px);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 8px;
+      border: 1px solid rgba(4, 199, 53, 0.15);
+    }
+    .user-info-box .sys-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #b5c8f1;
+      margin-bottom: 4px;
+    }
+    .sys-name1 {
+      font-size: 9px;
+      font-weight: bold;
+      color: #6b99fc;
+      margin-bottom: 1px;
+    }
+    .user-info-box .user-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+    .user-name {
+      font-weight: normal;
+      color: #f9fc3e;
+      font-size: 11px;
+    }
+    .logout-btn {
+      font-size: 9px;
+      padding: 2px 6px;
+      background: #ffffff;
+      border: 0px solid #000000;
+      border-radius: 9px;
+      color: #000c01;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    /* ✅ 하단 로고 영역 — 급액기준등록과 완전 동일 */
+    .sidebar-logo-bottom {
+      text-align: center;
+      padding: 8px 6px;
+      margin: 4px 8px;
+    }
+    .sidebar-logo-bottom img {
+      width: 50%;
+      height: auto;
+      opacity: 0.85;
+    }
+    /* ✅ 날씨 영역 — 급액기준등록과 완전 동일 */
+    .sidebar .weather-box {
+      padding: 6px !important;
+      margin: 4px 8px 10px 8px !important;
+      background: linear-gradient(135deg, #2c463e, #355837) !important;
+      border-radius: 8px !important;
+      border: 0px solid #546154 !important;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+    .sidebar .weather-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      background: transparent !important;
+    }
+    .sidebar .weather-table td {
+      border: 0px solid rgba(255, 255, 255, 0.2) !important;
+      padding: 4px 6px !important;
+      vertical-align: middle !important;
+      text-align: center !important;
+      background: transparent !important;
+      color: #ffffff !important;
+    }
+    .sidebar .weather-icon {
+      font-size: 35px !important;
+      line-height: 1 !important;
+    }
+    .sidebar .weather-temp {
+      font-size: 22px !important;
+      font-weight: bold !important;
+      color: #dbb1b1 !important;
+    }
+    .sidebar .weather-desc {
+      font-size: 10px !important;
+      color: #e8f5e9 !important;
+      margin-top: 0px !important;
+    }
+    .sidebar .weather-range, 
+    .sidebar .weather-location {
+      font-size: 10px !important;
+      color: #f1f8e9 !important;
+      text-align: center !important;
+    }
+    /* ✅ 농장설정 본문 스타일 — 기존 기능 그대로 유지 */
+    * { font-size: 11px; }
+    .card { 
+      background: #fff; 
+      border-radius: 8px; 
+      padding: 12px; 
+      margin-bottom: 8px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    h3 { font-size: 12px; margin: 0 0 10px 0; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 70px 1fr 50px 1fr;
+      gap: 6px 8px;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .form-grid label {
+      text-align: right;
+      padding-right: 4px;
+      font-size: 11px;
+      margin: 0;
+      white-space: nowrap;
+    }
+    .form-grid input,
+    .form-grid select,
+    .form-grid textarea {
+      padding: 5px 6px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 11px;
+      margin: 0;
+      box-sizing: border-box;
+      height: 28px;
+      width: 100%;
+    }
+    .form-grid .full { grid-column: 2 / -1; }
+    .form-grid textarea {
+      height: 50px;
+      resize: none;
+    }
+    .form-btn-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      padding: 12px 0 6px 0;
+      grid-column: 1 / -1;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 6px 18px;
+      font-size: 11px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .btn-primary {
+      background: linear-gradient(180deg, #42a5f5, #1976d2);
+      color: #fff;
+      border: 1px solid #1565c0;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(180deg, #64b5f6, #1565c0);
+    }
+    .btn-secondary {
+      background: linear-gradient(180deg, #f5f5f5, #e0e0e0);
+      color: #333;
+      border: 1px solid #bdbdbd;
+    }
+    .btn-secondary:hover {
+      background: linear-gradient(180deg, #fff, #e0e0e0);
+    }
+    .btn-sm {
+      padding: 3px 8px;
+      font-size: 10px;
+      border-radius: 3px;
+      border: none;
+    }
+    .hint { color: #666; font-size: 10px; margin-left: 4px; }
+    .readonly-bg { background: #f9f9f9; color: #666; }
+    .season-note { 
+      background: #e3f2fd; 
+      padding: 8px 10px; 
+      border-radius: 4px; 
+      font-size: 10px; 
+      color: #0d47a1; 
+      margin-bottom: 12px; 
+      line-height: 1.4;
+    }
+    .saved-list { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    .saved-list th, .saved-list td {
+      border: 1px solid #e0e0e0;
+      padding: 6px 4px;
+      font-size: 10px;
+      text-align: center;
+    }
+    .saved-list th { background: #f5f5f5; color: #333; }
+    .saved-list tr:hover { background: #fafafa; }
+    .empty-row { text-align: center; color: #999; padding: 10px 0 !important; }
+    .access-denied { text-align: center; padding: 40px; }
+    @media (max-width:480px) {
+      .form-grid { grid-template-columns: 70px 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ✅ 통일된 전체 레이아웃 — 급액기준등록과 완전 동일 -->
+  <div class="app-layout">
+    <!-- ✅ 왼쪽 사이드바 — 권한별 메뉴 포함 완전 동일 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo-top">
+        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1.png" alt="강북구 로고">
+      </div>
+      <!-- ✅ 사용자 정보 박스 -->
+      <div class="user-info-box" id="userInfoBox">
+        <div class="sys-name1">Drainage system</div>
+        <div class="sys-name">배액 관리 시스템</div>
+        <div class="menu-divider1"></div>
+        <div class="user-row">
+          <span class="user-name" id="sidebarUserName">사용자 정보</span>
+          <a href="#" class="logout-btn" id="sidebarLogoutBtn">LOGOUT</a>
+        </div>
+      </div>
+      <div class="menu-divider"></div>
+      <!-- ✅ 메뉴 — 권한별 보임/숨김 -->
+      <div class="sidebar-menu" id="sidebarMenu">
+        <a href="dashboard.html" data-role="all">📊 대시보드</a>
+        <a href="drain-record.html" data-role="all">📝 배액기록</a>
+        <a href="analysis-report.html" data-role="all">📈 분석리포트</a>
+        <a href="ai-report.html" data-role="all">🤖 AI분석리포트</a>
+        <a href="print-page.html" data-role="all">🖨️ 인쇄/CSV</a>
+        <div class="menu-divider"></div>
+        <a href="supply-standard.html" data-role="admin,manager">⚙️ 급액기준등록</a>
+        <a href="zone-manage.html" data-role="admin,manager">📍 구역등록</a>
+        <a href="farm-settings.html" class="active" data-role="admin,manager">🏠 농장설정</a>
+        <a href="ai-settings.html" data-role="admin">🔧 AI분석설정</a>
+        <a href="account-manage.html" data-role="admin">👤 계정관리</a>
+      </div>
+      <!-- ✅ 구분선 -->
+      <div class="menu-divider"></div>
+      <!-- ✅ 하단 로고 -->
+      <div class="sidebar-logo-bottom">
+        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1_eng.png" alt="하단로고">
+      </div>
+      <!-- ✅ 날씨 영역 -->
+      <div class="weather-box" id="weatherBox">
+        <table class="weather-table">
+          <tr>
+            <td style="width: 35%;">
+              <div class="weather-icon" id="weatherIcon">🌤️</div>
+            </td>
+            <td style="width: 65%; text-align: left; padding-left: 8px;">
+              <div class="weather-temp" id="weatherTemp">--°</div>
+              <div class="weather-desc" id="weatherDesc">날씨 불러오는 중...</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <div class="weather-range" id="weatherRange">최저 --° / 최고 --°</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <div class="weather-location">서울시 강북구</div>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div style="margin-top:auto;"></div>
+    </aside>
+    <!-- ✅ 오른쪽: TOP바 + 내용 -->
+    <div class="right-column">
+      <header class="top-header">
+        <button class="header-hamburger" id="hamBtn">☰</button>
+        <div class="header-title-group">
+          <div class="header-title" id="topFarmName">농장정보 로딩중...</div>
+          <div class="top-meta" id="topFarmMeta">정보 불러오는 중...</div>
+        </div>
+      </header>
+      <!-- ✅ 내용 — 기존 농장설정 기능 100% 그대로 유지 -->
+      <main class="content-wrapper">
+        <div class="container" id="adminArea" style="display:none;">
+          <div class="page-top-bar">
+            <h2>🏠 농장 기본 설정</h2>
+            <p style="text-align:center; margin-top:-8px; color:#666; font-size:10px;">정식일과 시즌 종료일은 대시보드의 경과일·생육단계·진행률 계산에 사용됩니다.</p>
+          </div>
+          <!-- ✅ 입력 폼 -->
+          <div class="card">
+            <h3>📋 농장 정보 입력</h3>
+            <div class="season-note">
+              💡 <strong>다음 작기·작물 시</strong><br> → 시즌명, 정식일, 종료일, 품종만 변경해서 저장하면 됩니다. 
+              기존 기록은 시즌별로 보존됩니다.
+            </div>
+            <div class="form-grid">
+              <label><span style="color:red">*</span>농장명</label>
+              <input type="text" id="farmName" placeholder="강북구 스마트팜">
+              
+              <label>주소</label>
+              <input type="text" id="farmAddr" placeholder="서울시 강북구...">
+              
+              <label><span style="color:red">*</span>시즌명</label>
+              <input type="text" id="season" placeholder="2026-금실딸기">
+              
+              <label>관리자명</label>
+              <input type="text" id="managerName" placeholder="홍길동">
+              
+              <label>연락처</label>
+              <input type="text" id="contact" placeholder="010-1234-5678">
+              
+              <label>재배작물</label>
+              <input type="text" id="cropName" value="딸기">
+              
+              <label>품종</label>
+              <input type="text" id="variety" placeholder="금실">
+              
+              <label><span style="color:red">*</span>정식일</label>
+              <input type="date" id="plantingDate">
+              
+              <label><span style="color:red">*</span>시즌 종료일</label>
+              <input type="date" id="seasonEndDate">
+            </div>
+            <div class="form-btn-row">
+              <button onclick="saveFarmSettings()" class="btn-primary">💾 저장</button>
+              <button onclick="loadFarmSettings()" class="btn-primary">🔄 불러오기</button>
+              <button onclick="clearForm()" class="btn-secondary">🔄 새로작성</button>
+            </div>
+          </div>
+          <!-- ✅ 미리보기 -->
+          <div class="card">
+            <h3>ℹ️ 미리보기</h3>
+            <div class="form-grid" style="color:#444;">
+              <label>정식후 경과일</label>
+              <input type="text" id="previewDays" class="readonly-bg" readonly>
+              <label>현재 생육단계</label>
+              <input type="text" id="previewStage" class="readonly-bg" readonly>
+              <label>시즌 진행률</label>
+              <input type="text" id="previewRate" class="readonly-bg" readonly>
+            </div>
+          </div>
+          <!-- ✅ 저장된 시즌 설정 리스트 -->
+          <div class="card">
+            <h3>📚 저장된 시즌 설정</h3>
+            <table class="saved-list">
+              <thead>
+                <tr>
+                  <th style="width:18%;">시즌명</th>
+                  <th style="width:10%;">작물</th>
+                  <th style="width:10%;">품종</th>
+                  <th style="width:10%;">정식일</th>
+                  <th style="width:10%;">종료일</th>
+                  <th style="width:14%;">최종수정</th>
+                  <th style="width:26%;">작업</th>
+                </tr>
+              </thead>
+              <tbody id="savedListBody">
+                <tr><td colspan="7" class="empty-row">불러오는 중...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- ✅ 권한 제한 영역 -->
+        <div class="container" id="noPermitArea" style="display:none;">
+          <div class="card access-denied">
+            <h3>🔒 접근 권한이 없습니다</h3>
+            <p>농장설정은 최고관리자와 매니저만 접근할 수 있습니다.</p>
+            <button class="btn-primary" onclick="location.href='dashboard.html'">대시보드로 돌아가기</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="overlay" id="overlay"></div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
+    authDomain: "smartfarm-drainage-system.firebaseapp.com",
+    projectId: "smartfarm-drainage-system",
+    storageBucket: "smartfarm-drainage-system.firebasestorage.app",
+    messagingSenderId: "699907108321",
+    appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
+    measurementId: "G-W7L21Y8JZN"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const SETTINGS_COLL = "farm_settings_history";
+  const CURRENT_SETTING_ID = "current";
+
+  // ✅ 권한 상수
+  const ROLE_ADMIN = "admin";
+  const ROLE_MANAGER = "manager";
+  const ROLE_WORKER = "worker";
+  const ROLE_GUEST = "guest";
+  function getRoleName(role) {
+    const map = { admin:"최고관리자", manager:"매니저", worker:"공공근로자", guest:"게스트" };
+    return map[role] || role;
+  }
+  function applyMenuPermissions(userRole) {
+    document.querySelectorAll(".sidebar-menu a").forEach(link => {
+      const allowedRoles = (link.dataset.role || "all").split(",");
+      if (allowedRoles.includes("all") || allowedRoles.includes(userRole)) {
+        link.classList.add("visible");
+      } else {
+        link.classList.remove("visible");
+      }
+    });
+  }
+
+  // ✅ 날짜 포맷
+  function formatDateYmd(dateStr) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // ✅ 농장정보 불러오기 → TOP바에 표시
+  async function loadFarmInfo() {
+    try {
+      const snap = await getDoc(doc(db, "settings", CURRENT_SETTING_ID));
+      const topFarmNameEl = document.getElementById("topFarmName");
+      const topMetaEl = document.getElementById("topFarmMeta");
+      if (snap.exists()) {
+        const farm = snap.data();
+        topFarmNameEl.textContent = farm.farmName || "강북구 스마트팜 재배단지";
+        topMetaEl.innerHTML = `
+          <span>🌿 재배작물: ${farm.cropName || "딸기"}</span>
+          <span>🍓 품종: ${farm.variety || "금실"}</span>
+          <span>🌱 정식일: ${formatDateYmd(farm.plantingDate) || "-"}</span>
+        `;
+      } else {
+        topFarmNameEl.textContent = "강북구 스마트팜 재배단지";
+        topMetaEl.innerHTML = `<span style="color:#ffd700;">⚠️ 농장설정 미등록</span>`;
+      }
+    } catch (e) { 
+      console.log("농장설정 오류:", e); 
+      document.getElementById("topFarmName").textContent = "강북구 스마트팜 재배단지";
+      document.getElementById("topFarmMeta").innerHTML = `<span style="color:red;">정보 불러오기 오류</span>`;
+    }
+  }
+
+  // ✅ 권한 확인
+  function checkAuth() {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    const userRole = localStorage.getItem("userRole") || "";
+    const allowRoles = ["admin", "manager"];
+    
+    if (!user || !user.userId || !userRole) {
+      location.href = "index.html";
+      return null;
+    }
+    const userName = user.userName || user.userId || "사용자";
+    document.getElementById("sidebarUserName").textContent = `${userName} ${getRoleName(userRole)}`;
+    applyMenuPermissions(userRole);
+    
+    if (!allowRoles.includes(userRole)) {
+      document.getElementById("noPermitArea").style.display = "block";
+      document.getElementById("adminArea").style.display = "none";
+      return null;
+    }
+    document.getElementById("adminArea").style.display = "block";
+    return { user, userRole };
+  }
+
+  // ✅ 로그아웃
+  function doLogout() {
+    if (confirm("로그아웃 하시겠습니까?")) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("userRole");
+      location.href = "index.html";
+    }
+  }
+
+  // ✅ 햄버거 + 로그아웃
+  document.addEventListener("click", e => {
+    if (e.target.id === "hamBtn" || e.target.closest("#hamBtn")) {
+      document.getElementById("sidebar").classList.toggle("open");
+      document.getElementById("overlay").classList.toggle("show");
+    }
+    if (e.target.id === "sidebarLogoutBtn" || e.target.closest("#sidebarLogoutBtn")) {
+      e.preventDefault();
+      doLogout();
+    }
+  });
+
+  // ✅ 날씨 불러오기
+  async function loadWeather() {
+    try {
+      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.63&longitude=127.03&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=1");
+      const data = await res.json();
+      const temp = Math.round(data.current.temperature_2m * 10) / 10;
+      const minTemp = Math.round(data.daily.temperature_2m_min[0]);
+      const maxTemp = Math.round(data.daily.temperature_2m_max[0]);
+      const code = data.current.weather_code;
+      let icon = "☀️", desc = "맑음";
+      if (code === 1 || code === 2) { icon = "🌤️"; desc = "구름조금"; }
+      else if (code === 3) { icon = "☁️"; desc = "흐림"; }
+      else if (code >= 45 && code <= 48) { icon = "🌫️"; desc = "안개"; }
+      else if (code >= 51 && code <= 67) { icon = "🌧️"; desc = "비"; }
+      else if (code >= 71 && code <= 77) { icon = "❄️"; desc = "눈"; }
+      else if (code >= 80 && code <= 82) { icon = "🌧️"; desc = "소나기"; }
+      const elIcon = document.getElementById("weatherIcon");
+      const elTemp = document.getElementById("weatherTemp");
+      const elDesc = document.getElementById("weatherDesc");
+      const elRange = document.getElementById("weatherRange");
+      if(elIcon) elIcon.textContent = icon;
+      if(elTemp) elTemp.textContent = `${temp}°`;
+      if(elDesc) elDesc.textContent = desc;
+      if(elRange) elRange.textContent = `최저 ${minTemp}° / 최고 ${maxTemp}°`;
+    } catch(e) {
+      const elDesc = document.getElementById("weatherDesc");
+      if(elDesc) elDesc.textContent = "날씨 불러오기 실패";
+    }
+  }
+
+  // ✅ 생육단계 계산
+  function getGrowthStage(days) {
+    if (days < 0) return { name: "정식준비", color: "#666" };
+    if (days <= 30) return { name: "활착기", color: "#2e7d32" };
+    if (days <= 60) return { name: "생육기", color: "#ed6c02" };
+    if (days <= 120) return { name: "초기수확기", color: "#d32f2f" };
+    if (days <= 180) return { name: "수확중기", color: "#7b1fa2" };
+    return { name: "수확후기", color: "#1976d2" };
+  }
+
+  // ✅ 미리보기 갱신
+  function updatePreview() {
+    const plantDate = document.getElementById("plantingDate").value;
+    const endDate = document.getElementById("seasonEndDate").value;
+    if (!plantDate || !endDate) {
+      document.getElementById("previewDays").value = "정식일 입력 필요";
+      document.getElementById("previewStage").value = "-";
+      document.getElementById("previewRate").value = "-";
+      return;
+    }
+    const today = new Date(); today.setHours(0,0,0,0);
+    const pd = new Date(plantDate); pd.setHours(0,0,0,0);
+    const ed = new Date(endDate); ed.setHours(0,0,0,0);
+    const diffMs = today - pd;
+    const days = Math.round(diffMs / (1000*60*60*24));
+    const totalMs = ed - pd;
+    const totalDays = Math.round(totalMs / (1000*60*60*24));
+    const rate = totalDays > 0 ? Math.min(100, Math.round((days / totalDays) * 100)) : 0;
+    const daysText = days >= 0 ? `D+${days}` : `D${days}`;
+    const stage = getGrowthStage(days);
+    document.getElementById("previewDays").value = daysText;
+    document.getElementById("previewStage").value = stage.name;
+    document.getElementById("previewRate").value = `${rate}% (${totalDays}일 기준)`;
+  }
+
+  // ✅ 저장: 현재 설정 + 히스토리 리스트에 함께 저장
+  window.saveFarmSettings = async function () {
+    const farmName = document.getElementById("farmName").value.trim();
+    const plantingDate = document.getElementById("plantingDate").value;
+    const seasonEndDate = document.getElementById("seasonEndDate").value;
+    const season = document.getElementById("season").value.trim();
+    
+    if (!farmName || !plantingDate || !seasonEndDate || !season) {
+      return alert("농장명, 시즌명, 정식일, 시즌 종료예정일은 필수입니다.");
+    }
+    const data = {
+      farmName,
+      farmAddr: document.getElementById("farmAddr").value.trim(),
+      season,
+      managerName: document.getElementById("managerName").value.trim(),
+      contact: document.getElementById("contact").value.trim(),
+      cropName: document.getElementById("cropName").value.trim() || "딸기",
+      variety: document.getElementById("variety").value.trim(),
+      plantingDate,
+      seasonEndDate,
+      updatedAt: new Date().toISOString()
+    };
+    try {
+      await setDoc(doc(db, "settings", CURRENT_SETTING_ID), data);
+      await setDoc(doc(db, SETTINGS_COLL, season), data);
+      alert("✅ 농장설정이 저장되었습니다.");
+      updatePreview();
+      loadSavedList();
+      loadFarmInfo();
+    } catch (e) {
+      alert("❌ 저장 실패: " + e.message);
+    }
+  };
+
+  // ✅ 현재 설정 불러오기
+  window.loadFarmSettings = async function () {
+    try {
+      const snap = await getDoc(doc(db, "settings", CURRENT_SETTING_ID));
+      if (snap.exists()) {
+        fillForm(snap.data());
+      } else {
+        alert("⚠️ 저장된 설정이 없습니다.");
+      }
+    } catch (e) {
+      alert("❌ 불러오기 실패: " + e.message);
+    }
+  };
+
+  // ✅ 폼 채우기
+  function fillForm(d) {
+    document.getElementById("farmName").value = d.farmName || "";
+    document.getElementById("farmAddr").value = d.farmAddr || "";
+    document.getElementById("season").value = d.season || "";
+    document.getElementById("managerName").value = d.managerName || "";
+    document.getElementById("contact").value = d.contact || "";
+    document.getElementById("cropName").value = d.cropName || "딸기";
+    document.getElementById("variety").value = d.variety || "";
+    document.getElementById("plantingDate").value = d.plantingDate || "";
+    document.getElementById("seasonEndDate").value = d.seasonEndDate || "";
+    updatePreview();
+  }
+
+  // ✅ 입력 초기화
+  window.clearForm = function () {
+    document.getElementById("farmName").value = "";
+    document.getElementById("farmAddr").value = "";
+    document.getElementById("season").value = "";
+    document.getElementById("managerName").value = "";
+    document.getElementById("contact").value = "";
+    document.getElementById("cropName").value = "딸기";
+    document.getElementById("variety").value = "";
+    document.getElementById("plantingDate").value = "";
+    document.getElementById("seasonEndDate").value = "";
+    document.getElementById("previewDays").value = "";
+    document.getElementById("previewStage").value = "";
+    document.getElementById("previewRate").value = "";
+  };
+
+  // ✅ 저장된 시즌 리스트 불러오기
+  async function loadSavedList() {
+    try {
+      const q = query(collection(db, SETTINGS_COLL), orderBy("updatedAt", "desc"));
+      const snap = await getDocs(q);
+      const tbody = document.getElementById("savedListBody");
+      
+      if (snap.empty) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-row">저장된 시즌 설정이 없습니다.</td></tr>`;
+        return;
+      }
+      let html = "";
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        const seasonId = docSnap.id;
+        const updated = d.updatedAt ? new Date(d.updatedAt).toLocaleDateString("ko-KR") : "-";
+        html += `
+          <tr>
+            <td>${d.season || "-"}</td>
+            <td>${d.cropName || "-"}</td>
+            <td>${d.variety || "-"}</td>
+            <td>${d.plantingDate?.slice(5) || "-"}</td>
+            <td>${d.seasonEndDate?.slice(5) || "-"}</td>
+            <td>${updated}</td>
+            <td>
+              <button class="btn-sm" style="background:#e0e0e0; color:#333;" onclick="useSeason('${seasonId}')">적용</button>
+              <button class="btn-sm" style="background:#2196f3; color:#fff;" onclick="loadSeason('${seasonId}')">수정</button>
+              <button class="btn-sm" style="background:#ffebee; color:#c62828;" onclick="deleteSeason('${seasonId}')">삭제</button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    } catch (e) {
+      console.error("리스트 불러오기 오류:", e);
+      document.getElementById("savedListBody").innerHTML = `<tr><td colspan="7" class="empty-row">오류 발생</td></tr>`;
+    }
+  }
+
+  // ✅ 리스트에서 수정 불러오기
+  window.loadSeason = async function (seasonId) {
+    try {
+      const snap = await getDoc(doc(db, SETTINGS_COLL, seasonId));
+      if (snap.exists()) {
+        fillForm(snap.data());
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } catch (e) {
+      alert("❌ 불러오기 실패: " + e.message);
+    }
+  };
+
+  // ✅ 이 시즌을 현재 설정으로 적용
+  window.useSeason = async function (seasonId) {
+    if (!confirm(`"${seasonId}" 시즌을 현재 설정으로 적용하시겠습니까?`)) return;
+    try {
+      const snap = await getDoc(doc(db, SETTINGS_COLL, seasonId));
+      if (snap.exists()) {
+        const data = snap.data();
+        await setDoc(doc(db, "settings", CURRENT_SETTING_ID), data);
+        alert(`✅ ${seasonId} 시즌이 현재 설정으로 적용되었습니다.`);
+        fillForm(data);
+        loadFarmInfo();
+      }
+    } catch (e) {
+      alert("❌ 적용 실패: " + e.message);
+    }
+  };
+
+  // ✅ 시즌 삭제
+  window.deleteSeason = async function (seasonId) {
+    if (!confirm(`"${seasonId}" 시즌을 삭제하시겠습니까?`)) return;
+    try {
+      await deleteDoc(doc(db, SETTINGS_COLL, seasonId));
+      alert("✅ 삭제되었습니다.");
+      loadSavedList();
+    } catch (e) {
+      alert("❌ 삭제 실패: " + e.message);
+    }
+  };
+
+  // ✅ 페이지 로드
+  window.onload = async () => {
+    const auth = checkAuth();
+    if (!auth) return;
+    await loadFarmInfo();
+    loadWeather();
+    await loadFarmSettings();
+    await loadSavedList();
+    document.getElementById("plantingDate").addEventListener("change", updatePreview);
+    document.getElementById("seasonEndDate").addEventListener("change", updatePreview);
+  };
+</script>
+</body>
+</html>

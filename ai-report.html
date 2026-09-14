@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI분석리포트 · 강북구 스마트팜</title>
+  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="icon" href="data:;base64,=">
+  <style>
+    /* ✅ 전체 페이지 배경 */
+    body {
+      background: none;
+      background-color: #f5f5f5;
+    }
+    body::before { display: none; }
+
+    /* ✅ TOP바 — 분석리포트와 완전 동일 */
+    .top-header {
+      background: 
+        linear-gradient(rgba(47, 70, 56, 0.55), rgba(5, 8, 6, 0.55)),
+        url("https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNjA4MThfMjgy%2FMDAxNzg3MDM3MjU3NDA2.4ypGxvywbosdDIW5SOx70sO59WN6BiVoJx9jyh6zm9kg.0yvw-6Je2OJWoG0uXfYA9QuhnJz2nUkA_BH2oqEjv0Yg.JPEG%2F_CYL7346.jpg&type=a340") no-repeat center center !important;
+      background-size: cover !important;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .header-title {
+      color: #fffacf !important;
+      font-weight: bold;
+      font-size: 18px !important;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .top-meta {
+      font-size: 11.5px;
+      color: #faf9d6;
+      margin-top: 2px;
+      line-height: 1.4;
+      opacity: 0.95;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+    .top-meta span { display: inline-block; margin-right: 14px; }
+
+    /* ✅ 권한 메뉴 */
+    .sidebar-menu a { display: none; }
+    .sidebar-menu a.visible { display: block; }
+
+    /* ✅ 사용자 정보 박스 */
+    .user-info-box {
+      background: rgba(0, 70, 27, 0.4);
+      backdrop-filter: blur(4px);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 8px;
+      border: 1px solid rgba(4, 199, 53, 0.15);
+    }
+    .user-info-box .sys-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #b5c8f1;
+      margin-bottom: 4px;
+    }
+    .sys-name1 {
+      font-size: 9px;
+      font-weight: bold;
+      color: #6b99fc;
+      margin-bottom: 1px;
+    }
+    .user-info-box .user-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+    .user-name {
+      font-weight: normal;
+      color: #f9fc3e;
+      font-size: 11px;
+    }
+    .logout-btn {
+      font-size: 9px;
+      padding: 2px 6px;
+      background: #ffffff;
+      border: 0px solid #000000;
+      border-radius: 9px;
+      color: #000c01;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    /* ✅ 하단 로고 영역 */
+    .sidebar-logo-bottom {
+      text-align: center;
+      padding: 8px 6px;
+      margin: 4px 8px;
+    }
+    .sidebar-logo-bottom img {
+      width: 50%;
+      height: auto;
+      opacity: 0.85;
+    }
+
+    /* ✅ 날씨 영역 */
+    .weather-box {
+      padding: 6px;
+      margin: 4px 8px 10px 8px;
+      background: linear-gradient(135deg, #2c463e, #355837) !important;
+      border-radius: 8px;
+      border: 0px solid #546154;
+    }
+    .weather-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .weather-table td {
+      border: 0px solid rgba(255, 255, 255, 0.2) !important;
+      padding: 4px 6px;
+      vertical-align: middle;
+      text-align: center;
+      background: transparent !important;
+    }
+    .weather-icon {
+      font-size: 35px;
+      line-height: 1;
+    }
+    .weather-temp {
+      font-size: 22px;
+      font-weight: bold;
+      color: #dbb1b1;
+    }
+    .weather-desc {
+      font-size: 10px;
+      color: #e8f5e9;
+      margin-top: 0px;
+    }
+    .weather-range, .weather-location {
+      font-size: 10px;
+      color: #f1f8e9;
+      text-align: center;
+    }
+
+    /* ✅ 카드 — 기존 AI 스타일 유지 */
+    .card { 
+      background: #fff; border-radius: 8px; padding: 12px; margin-bottom: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .card1 {
+      background: #fbfdf9;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      border: 1px solid #bbd3bb;
+    }
+    h2 { margin: 0 0 12px 0; font-size: 14px; }
+    h3 { font-size: 12px; margin: 0 0 10px 0; }
+    .empty-box { text-align: center; color: #999; padding: 20px; }
+    .info-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; font-size: 11px; }
+    .date-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; font-size: 11px; }
+    .date-row input, .date-row select { padding: 4px; font-size: 11px; }
+    .ai-check-box { border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
+    .ai-check-item { display: flex; gap: 8px; align-items: center; padding: 4px 2px; font-size: 11px; }
+    .ai-check-item .badge { font-size: 10px; padding: 1px 5px; border-radius: 10px; background: #e3f2fd; color: #1565c0; }
+    .result-card { 
+      border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px; margin-bottom: 8px;
+      background: #fff;
+    }
+    .result-card h4 { margin: 0; font-size: 12px; padding: 4px 0; }
+    .result-body { 
+      padding: 10px 0 0 0; border-top: 1px dashed #eee;
+      font-size: 11px; line-height: 1.7; white-space: pre-wrap; word-break: break-all;
+    }
+    .past-list { font-size: 11px; }
+    .past-table { width: 100%; border-collapse: collapse; }
+    .past-table th, .past-table td { 
+      padding: 8px 6px; border-bottom: 1px solid #eee;
+      text-align: left; font-size: 11px;
+    }
+    .past-table th { background: #f8f9fa; color: #333; font-weight: 500; }
+    .past-table tbody tr { cursor: pointer; }
+    .past-table tbody tr:hover { background: #f8f9fa; }
+    .past-date { color: #555; white-space: nowrap; }
+    .past-name { color: #1976d2; font-weight: 500; }
+    .del-btn {
+      padding: 2px 6px; font-size: 10px; border: none;
+      background: #ffebee; color: #c62828; border-radius: 3px;
+      cursor: pointer;
+    }
+    .del-btn:disabled { background: #f5f5f5; color: #ccc; cursor: not-allowed; }
+    .del-btn:hover:not(:disabled) { background: #ffcdd2; }
+    .paging-area {
+      display: flex; justify-content: center; gap: 4px;
+      margin-top: 12px; padding-top: 8px; border-top: 1px solid #eee;
+    }
+    .paging-btn {
+      padding: 4px 10px; border: 1px solid #ddd;
+      background: #fff; font-size: 11px; cursor: pointer; border-radius: 3px;
+    }
+    .paging-btn:hover { border-color: #1976d2; color: #1976d2; }
+    .paging-btn.on {
+      background: #1976d2; color: #fff; border-color: #1976d2;
+      cursor: default;
+    }
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); z-index: 999;
+      display: flex; align-items: center; justify-content: center;
+      padding: 10px; box-sizing: border-box;
+    }
+    .modal-content {
+      background: #fff; border-radius: 8px; width: 100%; max-width: 700px;
+      max-height: 85vh; display: flex; flex-direction: column;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .modal-header {
+      padding: 12px 15px; border-bottom: 1px solid #eee;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-header h4 { margin: 0; font-size: 13px; }
+    .modal-close {
+      border: none; background: none; font-size: 18px; cursor: pointer;
+      color: #888; padding: 0; width: 28px; height: 28px;
+    }
+    .modal-body {
+      padding: 15px; overflow-y: auto; flex: 1;
+      font-size: 11px; line-height: 1.7; white-space: pre-wrap; word-break: break-all;
+    }
+    .modal-meta {
+      padding: 8px 15px; background: #f8f9fa; border-top: 1px solid #eee;
+      font-size: 10.5px; color: #555;
+    }
+    .disabled-box { padding: 20px; text-align: center; color: #888; background: #f9f9f9; border-radius: 6px; font-size: 11px; }
+    @media (max-width:480px) {
+      .date-row { flex-wrap: wrap; }
+      .info-row { gap: 8px; }
+      .modal-body { padding: 10px; }
+      .past-table th:nth-child(3), .past-table td:nth-child(3) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ✅ 전체 레이아웃 -->
+  <div class="app-layout">
+
+    <!-- ✅ 왼쪽 사이드바 — 분석리포트와 완전 동일 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo-top">
+        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1.png" alt="강북구 로고">
+      </div>
+
+      <!-- ✅ 사용자 정보 박스 -->
+      <div class="user-info-box" id="userInfoBox">
+        <div class="sys-name1">Drainage system</div>
+        <div class="sys-name">배액 관리 시스템</div>
+        <div class="menu-divider1"></div>
+        <div class="user-row">
+          <span class="user-name" id="sidebarUserName">사용자 정보</span>
+          <a href="#" class="logout-btn" id="sidebarLogoutBtn">LOGOUT</a>
+        </div>
+      </div>
+
+      <div class="menu-divider"></div>
+
+      <!-- ✅ 메뉴 -->
+      <div class="sidebar-menu" id="sidebarMenu">
+        <a href="dashboard.html" data-role="all">📊 대시보드</a>
+        <a href="drain-record.html" data-role="all">📝 배액기록</a>
+        <a href="analysis-report.html" data-role="all">📈 분석리포트</a>
+        <a href="ai-report.html" class="active" data-role="all">🤖 AI분석리포트</a>
+        <a href="print-page.html" data-role="all">🖨️ 인쇄/CSV</a>
+        <div class="menu-divider"></div>
+        <a href="supply-standard.html" data-role="admin,manager">⚙️ 급액기준등록</a>
+        <a href="zone-manage.html" data-role="admin,manager">📍 구역등록</a>
+        <a href="farm-settings.html" data-role="admin,manager">🏠 농장설정</a>
+        <a href="ai-settings.html" data-role="admin">🔧 AI분석설정</a>
+        <a href="account-manage.html" data-role="admin">👤 계정관리</a>
+      </div>
+
+      <!-- ✅ 구분선 -->
+      <div class="menu-divider"></div>
+
+      <!-- ✅ 하단 로고 -->
+      <div class="sidebar-logo-bottom">
+        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1_eng.png" alt="하단로고">
+      </div>
+
+      <!-- ✅ 날씨 영역 -->
+      <div class="weather-box" id="weatherBox">
+        <table class="weather-table">
+          <tr>
+            <td style="width: 35%;">
+              <div class="weather-icon" id="weatherIcon">🌤️</div>
+            </td>
+            <td style="width: 65%; text-align: left; padding-left: 8px;">
+              <div class="weather-temp" id="weatherTemp">--°</div>
+              <div class="weather-desc" id="weatherDesc">날씨 불러오는 중...</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <div class="weather-range" id="weatherRange">최저 --° / 최고 --°</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <div class="weather-location">서울시 강북구</div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-top:auto;"></div>
+    </aside>
+
+    <!-- ✅ 오른쪽: TOP바 + 내용 -->
+    <div class="right-column">
+      <header class="top-header">
+        <button class="header-hamburger" id="hamBtn">☰</button>
+        <div class="header-title-group">
+          <div class="header-title" id="topFarmName">농장정보 로딩중...</div>
+          <div class="top-meta" id="topFarmMeta">정보 불러오는 중...</div>
+        </div>
+      </header>
+
+      <main class="content-wrapper">
+        <div class="container" id="adminArea" style="display:none;">
+
+          <!-- ✅ AI분석리포트 본문 — 기존 내용 그대로 유지 -->
+          <div class="page-top-bar" style="margin-bottom:12px;">
+            <h2 style="margin:0 0 4px 0; font-size:14px;">🤖 AI분석리포트</h2>
+            <p style="margin:0; font-size:10.5px; color:#666;">최대 3개의 AI 결과를 비교하고, 과거 분석결과도 확인하세요.</p>
+          </div>
+
+          <div class="card1">
+            <div class="date-row">
+              <select id="datePreset" onchange="setPreset()">
+                <option value="weekday">이번 주(월~금)</option>
+                <option value="week">이번 주(월~일)</option>
+                <option value="month">이번 달</option>
+                <option value="month3">최근 3개월</option>
+                <option value="custom">직접입력</option>
+              </select>
+              <span>시작일:</span>
+              <input type="date" id="sDate">
+              <span>~ 종료일:</span>
+              <input type="date" id="eDate">
+            </div>
+            <div class="info-row">
+              <span>📊 측정기록: <strong id="totalCount">0</strong>건</span>
+              <span>📍 측정라인: <strong id="lineInfo">-</strong></span>
+              <span>📏 급액기준: <strong id="stdInfo">-</strong></span>
+            </div>
+          </div>
+
+          <!-- ✅ 분석 실행 영역 — 관리자/매니저에게만 보임 -->
+          <div class="card" id="aiSelectArea">
+            <h3>🤖 분석할 AI 선택 (최대 3개)</h3>
+            <div class="ai-check-box" id="aiCheckList">
+              <div style="color:#888;">AI 목록을 불러오는 중...</div>
+            </div>
+            <div style="margin-top:8px;">
+              <button onclick="runAIAnalysis()" class="btn primary">✅ 선택한 AI로 분석 실행</button>
+            </div>
+          </div>
+
+          <div class="card" id="noPermitArea" style="display:none;">
+            <div class="disabled-box">ⓘ 분석 실행 권한이 없습니다. 관리자에게 문의하세요.</div>
+          </div>
+
+          <div class="card">
+            <h3>📋 분석결과</h3>
+            <div id="aiResultArea">
+              <div style="color:#888; padding:16px; text-align:center; font-size:11px;">
+                분석할 AI를 선택하고 [분석 실행] 버튼을 클릭하세요.
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ 이전 분석결과 — 모든 권한에서 보임 / 삭제버튼은 관리자/매니저만 활성화 -->
+          <div class="card">
+            <h3>📚 과거 분석결과</h3>
+            <div class="past-list" id="pastResultArea">
+              <div style="color:#888; padding:12px; text-align:center; font-size:11px;">불러오는 중...</div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ✅ 팝업 모달 -->
+  <div class="modal-overlay" id="resultModal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 id="modalTitle">AI분석 결과</h4>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-meta" id="modalMeta"></div>
+      <div class="modal-body" id="modalBody">내용 불러오는 중...</div>
+    </div>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, addDoc, query, orderBy, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
+    authDomain: "smartfarm-drainage-system.firebaseapp.com",
+    projectId: "smartfarm-drainage-system",
+    storageBucket: "smartfarm-drainage-system.firebasestorage.app",
+    messagingSenderId: "699907108321",
+    appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
+    measurementId: "G-W7L21Y8JZN"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const FARM_SETTINGS_ID = "current";
+  const AI_COLLECTION = "ai_engines";
+  const AI_LOG_COLLECTION = "ai_analysis_logs";
+  const DEFAULT_ENDPOINT = "https://generativelanguage.googleapis.com/v1/models/";
+  const PAGE_SIZE = 10;
+
+  let userRole = "";
+  let standards = [];
+  let aiList = [];
+  let zoneList = [];
+  let allRecords = [];
+  let allList = [];
+  let currentPage = 1;
+
+  // ✅ 권한 상수
+  const ROLE_ADMIN = "admin";
+  const ROLE_MANAGER = "manager";
+  const ROLE_WORKER = "worker";
+  const ROLE_GUEST = "guest";
+
+  function getRoleName(role) {
+    const map = { admin:"최고관리자", manager:"매니저", worker:"공공근로자", guest:"게스트" };
+    return map[role] || role;
+  }
+
+  function applyMenuPermissions(userRole) {
+    document.querySelectorAll(".sidebar-menu a").forEach(link => {
+      const allowedRoles = (link.dataset.role || "all").split(",");
+      if (allowedRoles.includes("all") || allowedRoles.includes(userRole)) {
+        link.classList.add("visible");
+      } else {
+        link.classList.remove("visible");
+      }
+    });
+  }
+
+  // ✅ 분석실행 권한: 관리자/매니저만
+  function canRunAnalysis() {
+    return [ROLE_ADMIN, ROLE_MANAGER].includes(userRole);
+  }
+
+  // ✅ 삭제 권한: 관리자/매니저만
+  function canDeleteReport() {
+    return [ROLE_ADMIN, ROLE_MANAGER].includes(userRole);
+  }
+
+  function formatDateYmd(dateStr) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  async function loadFarmInfo() {
+    try {
+      const snap = await getDoc(doc(db, "settings", FARM_SETTINGS_ID));
+      const topFarmNameEl = document.getElementById("topFarmName");
+      const topMetaEl = document.getElementById("topFarmMeta");
+      if (snap.exists()) {
+        const farm = snap.data();
+        topFarmNameEl.textContent = farm.farmName || "강북구 스마트팜 재배단지";
+        topMetaEl.innerHTML = `
+          <span>🌿 재배작물: ${farm.cropType || "딸기"}</span>
+          <span>🍓 품종: ${farm.variety || "금실"}</span>
+          <span>🌱 정식일: ${formatDateYmd(farm.plantingDate) || "-"}</span>
+        `;
+      } else {
+        topFarmNameEl.textContent = "강북구 스마트팜 재배단지";
+        topMetaEl.innerHTML = `<span style="color:#ffd700;">⚠️ 농장설정 미등록</span>`;
+      }
+    } catch (e) {
+      console.log("농장설정 오류:", e);
+      document.getElementById("topFarmName").textContent = "강북구 스마트팜 재배단지";
+      document.getElementById("topFarmMeta").innerHTML = `<span style="color:red;">정보 불러오기 오류</span>`;
+    }
+  }
+
+  function checkStatus(r) {
+    const std = standards.filter(s => 
+      s.standardDate <= r.measureDate && 
+      (s.line || "V01") === (r.line || "V01")
+    ).sort((a, b) => b.standardDate.localeCompare(a.standardDate))[0];
+    if (!std) return { level: "none", ecDev: "-", phDev: "-", statusText: "기준없음" };
+
+    const drainEc = parseFloat(r.drainEc);
+    const drainPh = parseFloat(r.drainPh);
+    const supEc = parseFloat(std.supplyEc) || 0;
+    const supPh = parseFloat(std.supplyPh) || 0;
+    const compEc = supEc + 0.2;
+    const ecDev = (drainEc - compEc).toFixed(2);
+    const phDev = (drainPh - supPh).toFixed(2);
+    const eD = parseFloat(ecDev);
+    const pD = parseFloat(phDev);
+
+    let ecLevel = "ok";
+    if (eD >= 0.7 || eD <= -0.5) ecLevel = "danger";
+    else if ((eD >= 0.4 && eD <= 0.6) || (eD <= -0.31 && eD >= -0.4)) ecLevel = "warn";
+
+    let phLevel = "ok";
+    if (pD >= 0.9 || pD <= -0.7 || drainPh >= 6.8 || drainPh <= 5.2) phLevel = "danger";
+    else if ((pD >= 0.5 && pD <= 0.8) || (pD <= -0.41 && pD >= -0.6)) phLevel = "warn";
+
+    let level = "ok";
+    if (ecLevel === "danger" || phLevel === "danger") level = "danger";
+    else if (ecLevel === "warn" || phLevel === "warn") level = "warn";
+
+    return {
+      level, ecDev, phDev,
+      statusText: level === "danger" ? "🚨 경고" : level === "warn" ? "⚠️ 주의" : "✅ 정상",
+      statusColor: level === "danger" ? "#c62828" : level === "warn" ? "#ef6c00" : "#2e7d32"
+    };
+  }
+
+  function checkAuth() {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    userRole = localStorage.getItem("userRole") || "";
+    if (!user || !user.userId || !userRole) {
+      location.href = "index.html";
+      return null;
+    }
+
+    const userName = user.userName || user.userId || "사용자";
+    document.getElementById("sidebarUserName").textContent = `${userName} ${getRoleName(userRole)}`;
+    applyMenuPermissions(userRole);
+    document.getElementById("adminArea").style.display = "block";
+
+    // ✅ 분석실행 영역: 관리자/매니저에게만 보임
+    if (canRunAnalysis()) {
+      document.getElementById("aiSelectArea").style.display = "block";
+      document.getElementById("noPermitArea").style.display = "none";
+    } else {
+      document.getElementById("aiSelectArea").style.display = "none";
+      document.getElementById("noPermitArea").style.display = "block";
+    }
+    return { user, userRole };
+  }
+
+  function doLogout() {
+    if (confirm("로그아웃 하시겠습니까?")) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("userRole");
+      location.href = "index.html";
+    }
+  }
+
+  document.addEventListener("click", e => {
+    if (e.target.id === "hamBtn" || e.target.closest("#hamBtn")) {
+      document.getElementById("sidebar").classList.toggle("open");
+      document.getElementById("overlay").classList.toggle("show");
+    }
+    if (e.target.id === "sidebarLogoutBtn" || e.target.closest("#sidebarLogoutBtn")) {
+      e.preventDefault();
+      doLogout();
+    }
+  });
+
+  async function loadWeather() {
+    try {
+      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.63&longitude=127.03&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=1");
+      const data = await res.json();
+      const temp = Math.round(data.current.temperature_2m * 10) / 10;
+      const minTemp = Math.round(data.daily.temperature_2m_min[0]);
+      const maxTemp = Math.round(data.daily.temperature_2m_max[0]);
+      const code = data.current.weather_code;
+      let icon = "☀️", desc = "맑음";
+      if (code === 1 || code === 2) { icon = "🌤️"; desc = "구름조금"; }
+      else if (code === 3) { icon = "☁️"; desc = "흐림"; }
+      else if (code >= 45 && code <= 48) { icon = "🌫️"; desc = "안개"; }
+      else if (code >= 51 && code <= 67) { icon = "🌧️"; desc = "비"; }
+      else if (code >= 71 && code <= 77) { icon = "❄️"; desc = "눈"; }
+      else if (code >= 80 && code <= 82) { icon = "🌧️"; desc = "소나기"; }
+
+      const elIcon = document.getElementById("weatherIcon");
+      const elTemp = document.getElementById("weatherTemp");
+      const elDesc = document.getElementById("weatherDesc");
+      const elRange = document.getElementById("weatherRange");
+      if(elIcon) elIcon.textContent = icon;
+      if(elTemp) elTemp.textContent = `${temp}°`;
+      if(elDesc) elDesc.textContent = desc;
+      if(elRange) elRange.textContent = `최저 ${minTemp}° / 최고 ${maxTemp}°`;
+    } catch(e) {
+      const elDesc = document.getElementById("weatherDesc");
+      if(elDesc) elDesc.textContent = "날씨 불러오기 실패";
+    }
+  }
+
+  // ✅ 팝업 열기 — 모든 권한에서 가능
+  window.openResultModal = async function(logId) {
+    const idx = allList.findIndex(x => x.id === logId);
+    if (idx === -1) return;
+    const log = allList[idx];
+    const dateStr = new Date(log.analyzedAt).toLocaleString("ko-KR", {
+      year: "numeric", month: "long", day: "numeric",
+      hour: "2-digit", minute: "2-digit"
+    });
+    document.getElementById("modalTitle").textContent = log.aiName || "AI분석 결과";
+    document.getElementById("modalMeta").textContent = `📅 분석일시: ${dateStr}  |  📊 분석기간: ${log.period || "-"}`;
+    document.getElementById("modalBody").textContent = "🔄 내용 불러오는 중...";
+    document.getElementById("resultModal").style.display = "flex";
+    document.body.style.overflow = "hidden";
+
+    try {
+      const snap = await getDoc(doc(db, AI_LOG_COLLECTION, logId));
+      if (snap.exists()) {
+        const data = snap.data();
+        document.getElementById("modalBody").textContent = data.resultText || "내용이 없습니다.";
+      } else {
+        document.getElementById("modalBody").textContent = "⚠️ 내용을 찾을 수 없습니다.";
+      }
+    } catch (e) {
+      document.getElementById("modalBody").textContent = "❌ 불러오기 실패: " + e.message;
+    }
+  };
+
+  window.closeModal = function() {
+    document.getElementById("resultModal").style.display = "none";
+    document.body.style.overflow = "";
+  };
+
+  // ✅ 삭제 기능 — 관리자/매니저만 가능
+  window.deleteLog = async function(logId, e) {
+    e.stopPropagation();
+    if (!canDeleteReport()) {
+      alert("삭제 권한이 없습니다.");
+      return;
+    }
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    try {
+      await deleteDoc(doc(db, AI_LOG_COLLECTION, logId));
+      await loadSavedResults();
+    } catch (err) {
+      alert("삭제 실패: " + err.message);
+    }
+  };
+
+  window.setPreset = function() {
+    const now = new Date();
+    const preset = document.getElementById("datePreset").value;
+    let start = new Date(), end = new Date();
+    if (preset === "weekday") {
+      const day = now.getDay() || 7;
+      start.setDate(now.getDate() - day + 1);
+      end = new Date(start); end.setDate(start.getDate() + 4);
+    } else if (preset === "week") {
+      const day = now.getDay() || 7;
+      start.setDate(now.getDate() - day + 1);
+      end = new Date(start); end.setDate(start.getDate() + 6);
+    } else if (preset === "month") {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    } else if (preset === "month3") {
+      start = new Date(now); start.setMonth(start.getMonth() - 3);
+    } else return;
+    document.getElementById("sDate").valueAsDate = start;
+    document.getElementById("eDate").valueAsDate = end;
+    loadSummaryInfo();
+  };
+
+  async function loadSummaryInfo() {
+    const sDate = document.getElementById("sDate").value;
+    const eDate = document.getElementById("eDate").value;
+    if (!sDate || !eDate) return;
+    const filtered = allRecords.filter(r => r.measureDate && r.measureDate >= sDate && r.measureDate <= eDate);
+    document.getElementById("totalCount").textContent = filtered.length + "건";
+    const lineSet = new Set(zoneList.map(z => z.liquidLine || z.line || "V01"));
+    document.getElementById("lineInfo").textContent = lineSet.size + "개 라인";
+    document.getElementById("stdInfo").textContent = standards[0]?.periodName || standards[0]?.name || standards[0]?.standardDate || "기준";
+  }
+
+  async function loadAIList() {
+    try {
+      const snap = await getDocs(collection(db, AI_COLLECTION));
+      aiList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      aiList.sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0) || String(a.aiName || "").localeCompare(String(b.aiName || "")));
+      renderAIList();
+    } catch (e) {
+      document.getElementById("aiCheckList").innerHTML = `<div style="color:red;">⚠️ AI목록 오류: ${e.message}</div>`;
+      console.error("AI목록 불러오기 오류:", e);
+    }
+  }
+
+  function renderAIList() {
+    const box = document.getElementById("aiCheckList");
+    if (!aiList.length) {
+      box.innerHTML = `<div style="color:#888;">⚠️ 등록된 AI가 없습니다. AI설정에서 먼저 등록하세요.</div>`;
+      return;
+    }
+    box.innerHTML = aiList.map(ai => `
+      <label class="ai-check-item">
+        <input type="checkbox" value="${ai.id}" 
+           data-name="${ai.aiTitle || ai.aiName || 'AI'}"
+           data-model="${ai.modelName || 'gemini-3.6-flash'}"
+           data-endpoint="${ai.apiEndpoint || DEFAULT_ENDPOINT}"
+           data-key="${ai.apiKey || ''}"
+           data-prompt="${(ai.analysisPrompt || ai.analysisRole || '').replace(/"/g, '&quot;')}">
+        ${ai.isMain ? "⭐" : ""} <strong>${ai.aiTitle || ai.aiName || "이름없음"}</strong>
+        <span class="badge">${ai.modelName || "gemini-3.6-flash"}</span>
+      </label>
+    `).join("");
+  }
+
+  window.runAIAnalysis = async function() {
+    if (!canRunAnalysis()) return alert("분석 실행 권한이 없습니다.");
+    const checks = document.querySelectorAll("#aiCheckList input:checked");
+    if (!checks.length) return alert("분석할 AI를 하나 이상 선택하세요!");
+    if (checks.length > 3) return alert("최대 3개까지 선택 가능합니다.");
+
+    const sDate = document.getElementById("sDate").value;
+    const eDate = document.getElementById("eDate").value;
+    if (!sDate || !eDate) return alert("시작일과 종료일을 지정하세요!");
+
+    const records = allRecords.filter(r => r.measureDate && r.measureDate >= sDate && r.measureDate <= eDate);
+    
+    let ok = 0, warn = 0, danger = 0;
+    records.forEach(r => {
+      const st = checkStatus(r);
+      if (st.level === "danger") danger++;
+      else if (st.level === "warn") warn++;
+      else ok++;
+    });
+
+    const dataSummary = `
+【강북구 스마트팜 딸기 배액관리】
+▸ 분석기간: ${sDate} ~ ${eDate}
+▸ 전체 ${records.length}건 / 정상 ${ok}건 / 주의 ${warn}건 / 경고 ${danger}건
+▸ 판정기준: EC편차=실제EC-(기준EC+0.2) / pH편차=실제pH-기준pH, pH 6.8↑ 또는 5.2↓는 경고
+▸ 구역정보: ${zoneList.map(z => `- ${z.zoneName} / ${z.liquidLine||z.line||"V01"} / 샘플:${z.hasSampleData?"예":"아니오"}`).join("\n")}
+▸ 측정기록 (최신순, 최대30건): ${records.sort((a,b)=>b.measureDate.localeCompare(a.measureDate)).slice(0,30).map(r => {
+      const st = checkStatus(r);
+      return `${r.measureDate} ${r.measureTime||""} | ${r.zoneName} | EC:${r.drainEc||"-"}(${st.ecDev}) | pH:${r.drainPh||"-"}(${st.phDev}) | ${st.statusText}`;
+    }).join("\n")}
+위 데이터를 분석하고 개선점과 권장사항을 제시해주세요.`.trim();
+
+    const area = document.getElementById("aiResultArea");
+    area.innerHTML = "";
+
+    for (const cb of checks) {
+      const aiName = cb.dataset.name;
+      const model = cb.dataset.model;
+      const endpoint = cb.dataset.endpoint || DEFAULT_ENDPOINT;
+      const apiKey = cb.dataset.key?.trim();
+      const prompt = cb.dataset.prompt || "당신은 스마트팜 딸기 재배 전문가입니다. 데이터를 분석하고 관리 제안을 해주세요.";
+      const cardId = "card-" + cb.value;
+
+      area.innerHTML += `
+        <div class="result-card" id="${cardId}">
+          <h4>🤖 ${aiName} <span style="color:#999;">분석중...</span></h4>
+          <div class="result-body">🔄 요청중...</div>
+        </div>`;
+
+      if (!apiKey) {
+        document.getElementById(cardId).querySelector(".result-body").textContent = "❌ API키가 없습니다. AI설정에서 API키를 등록해주세요.";
+        continue;
+      }
+
+      try {
+        const url = `${endpoint}${model}:generateContent?key=${apiKey}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${prompt}\n\n${dataSummary}` }] }]
+          })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text().catch(() => "");
+          throw new Error(`HTTP ${res.status}${errText ? " - " + errText : ""}`);
+        }
+
+        const json = await res.json();
+        const text = json?.candidates?.[0]?.content?.parts?.[0]?.text
+                   || json?.error?.message
+                   || "응답을 받아오지 못했습니다.";
+
+        document.querySelector(`#${cardId} h4 span`).textContent = "✅ 완료";
+        document.querySelector(`#${cardId} h4 span`).style.color = "#2e7d32";
+        document.querySelector(`#${cardId} .result-body`).textContent = text;
+
+        await addDoc(collection(db, AI_LOG_COLLECTION), {
+          aiName, model, period: `${sDate} ~ ${eDate}`,
+          analyzedAt: new Date().toISOString(),
+          resultText: text
+        });
+
+      } catch (e) {
+        document.querySelector(`#${cardId} .result-body`).textContent = "❌ 오류: " + e.message;
+        document.querySelector(`#${cardId} h4 span`).textContent = "실패";
+        document.querySelector(`#${cardId} h4 span`).style.color = "#c62828";
+      }
+    }
+
+    await loadSavedResults();
+  };
+
+  async function loadSavedResults() {
+    try {
+      const snap = await getDocs(query(
+        collection(db, AI_LOG_COLLECTION), 
+        orderBy("analyzedAt", "desc")
+      ));
+      allList = snap.docs.map(d => ({ 
+        id: d.id, 
+        aiName: d.data().aiName || "AI",
+        period: d.data().period || "-",
+        analyzedAt: d.data().analyzedAt
+      }));
+      currentPage = 1;
+      renderPage();
+    } catch (e) {
+      console.error("과거 결과 불러오기 오류:", e);
+      document.getElementById("pastResultArea").innerHTML = 
+        `<div style="color:red; padding:12px;">⚠️ 불러오기 오류: ${e.message}</div>`;
+    }
+  }
+
+  function renderPage() {
+    const area = document.getElementById("pastResultArea");
+    const totalPages = Math.ceil(allList.length / PAGE_SIZE) || 1;
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    const pageItems = allList.slice(start, end);
+
+    if (!allList.length) {
+      area.innerHTML = `<div style="color:#888; padding:12px; text-align:center; font-size:11px;">저장된 분석결과가 없습니다.</div>`;
+      return;
+    }
+
+    // ✅ 삭제버튼: 권한없으면 비활성화
+    const delDisabled = !canDeleteReport() ? "disabled" : "";
+    const delTitle = !canDeleteReport() ? "삭제 권한이 없습니다" : "";
+
+    area.innerHTML = `
+      <table class="past-table">
+        <thead>
+          <tr>
+            <th style="width:18%;">분석일시</th>
+            <th style="width:24%;">AI이름</th>
+            <th>분석기간</th>
+            <th style="width:6%;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pageItems.map(log => {
+            const dateStr = new Date(log.analyzedAt).toLocaleString("ko-KR", {
+              year: "numeric", month: "2-digit", day: "2-digit",
+              hour: "2-digit", minute: "2-digit"
+            });
+            return `
+              <tr>
+                <td class="past-date" onclick="openResultModal('${log.id}')">${dateStr}</td>
+                <td class="past-name" onclick="openResultModal('${log.id}')">${log.aiName}</td>
+                <td onclick="openResultModal('${log.id}')">${log.period}</td>
+                <td style="text-align:center;">
+                  <button class="del-btn" onclick="deleteLog('${log.id}', event)" ${delDisabled} title="${delTitle}">삭제</button>
+                </td>
+              </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+      <div class="paging-area">
+        ${Array.from({length:totalPages}, (_,i) => {
+          const p = i + 1;
+          return `<button class="paging-btn ${p===currentPage?'on':''}" onclick="goPage(${p})">${p}</button>`;
+        }).join("")}
+      </div>
+    `;
+  }
+
+  window.goPage = function(page) {
+    currentPage = page;
+    renderPage();
+    document.getElementById("pastResultArea").scrollIntoView({behavior:"smooth"});
+  };
+
+  window.onload = async () => {
+    const auth = checkAuth();
+    if (!auth) return;
+
+    await loadFarmInfo();
+    loadWeather();
+
+    const today = new Date();
+    const weekAgo = new Date();
+    weekAgo.setDate(today.getDate() - 7);
+    document.getElementById("eDate").valueAsDate = today;
+    document.getElementById("sDate").valueAsDate = weekAgo;
+    document.getElementById("sDate").onchange = loadSummaryInfo;
+    document.getElementById("eDate").onchange = loadSummaryInfo;
+
+    try {
+      const [stdSnap, zoneSnap, recSnap] = await Promise.all([
+        getDocs(collection(db, "supply_standards")),
+        getDocs(collection(db, "zones")),
+        getDocs(collection(db, "drain_records"))
+      ]);
+      standards = stdSnap.docs.map(d => d.data());
+      zoneList = zoneSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      allRecords = recSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      console.log("기준데이터 불러오기 오류:", e);
+    }
+
+    await loadAIList();
+    await loadSummaryInfo();
+    await loadSavedResults();
+  };
+</script>
+
+</body>
+</html>

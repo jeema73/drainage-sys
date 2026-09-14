@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <script src="js/common.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI분석설정 · 강북구 스마트팜</title>
+  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="icon" href="data:;base64,=">
+  <style>
+    /* ✅ 전체 페이지 배경 — 농장설정과 완전 동일 */
+    body {
+      background: none;
+      background-color: #f5f5f5;
+    }
+    body::before { display: none; }
+    /* ✅ TOP바 — 농장설정과 완전 동일 */
+    .top-header {
+      background: 
+        linear-gradient(rgba(47, 70, 56, 0.55), rgba(5, 8, 6, 0.55)),
+        url("https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNjA4MThfMjgy%2FMDAxNzg3MDM3MjU3NDA2.4ypGxvywbosdDIW5SOx70sO59WN6BiVoJx9jyh6zm9kg.0yvw-6Je2OJWoG0uXfYA9QuhnJz2nUkA_BH2oqEjv0Yg.JPEG%2F_CYL7346.jpg&type=a340") no-repeat center center !important;
+      background-size: cover !important;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .header-title {
+      color: #fffacf !important;
+      font-weight: bold;
+      font-size: 18px !important;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .top-meta {
+      font-size: 11.5px;
+      color: #faf9d6;
+      margin-top: 2px;
+      line-height: 1.4;
+      opacity: 0.95;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+    .top-meta span { display: inline-block; margin-right: 14px; }
+    /* ✅ 권한 메뉴 — 농장설정과 완전 동일 */
+    .sidebar-menu a { display: none; }
+    .sidebar-menu a.visible { display: block; }
+    /* ✅ 사용자 정보 박스 — 농장설정과 완전 동일 */
+    .user-info-box {
+      background: rgba(0, 70, 27, 0.4);
+      backdrop-filter: blur(4px);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 8px;
+      border: 1px solid rgba(4, 199, 53, 0.15);
+    }
+    .user-info-box .sys-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #b5c8f1;
+      margin-bottom: 4px;
+    }
+    .sys-name1 {
+      font-size: 9px;
+      font-weight: bold;
+      color: #6b99fc;
+      margin-bottom: 1px;
+    }
+    .user-info-box .user-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+    .user-name {
+      font-weight: normal;
+      color: #f9fc3e;
+      font-size: 11px;
+    }
+    .logout-btn {
+      font-size: 9px;
+      padding: 2px 6px;
+      background: #ffffff;
+      border: 0px solid #000000;
+      border-radius: 9px;
+      color: #000c01;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    /* ✅ 하단 로고 영역 — 농장설정과 완전 동일 */
+    .sidebar-logo-bottom {
+      text-align: center;
+      padding: 8px 6px;
+      margin: 4px 8px;
+    }
+    .sidebar-logo-bottom img {
+      width: 50%;
+      height: auto;
+      opacity: 0.85;
+    }
+    /* ✅ 날씨 영역 — 농장설정과 완전 동일 */
+    .sidebar .weather-box {
+      padding: 6px !important;
+      margin: 4px 8px 10px 8px !important;
+      background: linear-gradient(135deg, #2c463e, #355837) !important;
+      border-radius: 8px !important;
+      border: 0px solid #546154 !important;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+    .sidebar .weather-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      background: transparent !important;
+    }
+    .sidebar .weather-table td {
+      border: 0px solid rgba(255, 255, 255, 0.2) !important;
+      padding: 4px 6px !important;
+      vertical-align: middle !important;
+      text-align: center !important;
+      background: transparent !important;
+      color: #ffffff !important;
+    }
+    .sidebar .weather-icon {
+      font-size: 35px !important;
+      line-height: 1 !important;
+    }
+    .sidebar .weather-temp {
+      font-size: 22px !important;
+      font-weight: bold !important;
+      color: #dbb1b1 !important;
+    }
+    .sidebar .weather-desc {
+      font-size: 10px !important;
+      color: #e8f5e9 !important;
+      margin-top: 0px !important;
+    }
+    .sidebar .weather-range, 
+    .sidebar .weather-location {
+      font-size: 10px !important;
+      color: #f1f8e9 !important;
+      text-align: center !important;
+    }
+    /* ✅ AI설정 본문 스타일 — 기존 기능 그대로 유지 */
+    * { font-size: 11px; }
+    .card { 
+      background: #fff; 
+      border-radius: 8px; 
+      padding: 10px; 
+      margin-bottom: 8px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    h2, h3 { font-size: 13px; margin: 4px 0 10px 0; }
+    .note { color: #e65100; font-size: 10px; margin-left: 4px; }
+    button {
+      padding: 5px 16px;
+      font-size: 11px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .btn-primary {
+      background: linear-gradient(180deg, #42a5f5, #1976d2);
+      color: #fff;
+      border: 1px solid #1565c0;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(180deg, #64b5f6, #1565c0);
+    }
+    .btn-secondary {
+      background: linear-gradient(180deg, #f5f5f5, #e0e0e0);
+      color: #333;
+      border: 1px solid #bdbdbd;
+    }
+    .btn-secondary:hover {
+      background: linear-gradient(180deg, #fff, #e0e0e0);
+    }
+    .btn-sm {
+      padding: 2px 6px;
+      font-size: 10px;
+      border-radius: 3px;
+      border: none;
+    }
+    .ai-form-grid {
+      display: grid !important;
+      grid-template-columns: 90px 1fr 70px 140px !important;
+      gap: 5px 8px !important;
+      align-items: center !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    .ai-form-grid label {
+      text-align: right !important;
+      padding-right: 5px !important;
+      white-space: nowrap !important;
+      font-size: 11px !important;
+      margin: 0 !important;
+    }
+    .ai-form-grid input,
+    .ai-form-grid select,
+    .ai-form-grid textarea {
+      width: 100% !important;
+      padding: 4px 5px !important;
+      border: 1px solid #ccc !important;
+      border-radius: 3px !important;
+      font-size: 11px !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+      height: 26px !important;
+    }
+    .ai-form-grid input[type="checkbox"] {
+      width: 14px !important;
+      height: 14px !important;
+      margin: 0 4px 0 0 !important;
+      padding: 0 !important;
+      vertical-align: middle !important;
+    }
+    .ai-form-grid textarea {
+      grid-column: 2 / -1 !important;
+      min-height: 32px !important;
+      height: 32px !important;
+      resize: none !important;
+    }
+    .check-line {
+      grid-column: 2 / -1 !important;
+      padding-left: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0 !important;
+      padding-top: 2px !important;
+    }
+    .check-line label {
+      text-align: left !important;
+      padding-right: 0 !important;
+      width: auto !important;
+      display: inline !important;
+    }
+    .ai-form-btn-row {
+      display: flex !important;
+      gap: 8px !important;
+      justify-content: center !important;
+      padding: 8px 0 4px 0 !important;
+      grid-column: 1 / -1 !important;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    th, td { padding: 4px 4px; border: 1px solid #ddd; text-align: center; font-size: 11px; white-space: nowrap; }
+    th { background: #f5f5f5; }
+    .main-ai { background: #e3f2fd; }
+    .hidden-key { font-family: monospace; color: #666; font-size: 10px; }
+    .test-btn { background: #e8f5e9; color: #2e7d32; }
+    .test-btn:hover { background: #c8e6c9; }
+    .status-ok { color: #2e7d32; font-weight: bold; }
+    .status-fail { color: #c62828; font-weight: bold; }
+    .status-loading { color: #f57f17; }
+    .access-denied { text-align: center; padding: 40px; }
+    @media (max-width:768px) {
+      .ai-form-grid { grid-template-columns: 90px 1fr 70px 130px !important; }
+    }
+    @media (max-width:480px) {
+      .ai-form-grid { grid-template-columns: 90px 1fr !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ✅ 통일된 전체 레이아웃 — 농장설정과 완전 동일 -->
+  <div class="app-layout">
+    <!-- ✅ 왼쪽 사이드바 — 농장설정과 완전 동일 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo-top">
+        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1.png" alt="강북구 로고">
+      </div>
+      <!-- ✅ 사용자 정보 박스 — 농장설정과 완전 동일 -->
+      <div class="user-info-box" id="userInfoBox">
+        <div class="sys-name1">Drainage system</div>
+        <div class="sys-name">배액 관리 시스템</div>
+        <div class="menu-divider1"></div>
+        <div class="user-row">
+          <span class="user-name" id="sidebarUserName">사용자 정보</span>
+          <a href="#" class="logout-btn" id="sidebarLogoutBtn">LOGOUT</a>
+        </div>
+      </div>
+      <div class="menu-divider"></div>
+      <!-- ✅ 메뉴 — 권한별 보임/숨김, 농장설정과 완전 동일 -->
+      <div class="sidebar-menu" id="sidebarMenu">
+        <a href="dashboard.html" data-role="all">📊 대시보드</a>
+        <a href="drain-record.html" data-role="all">📝 배액기록</a>
+        <a href="analysis-report.html" data-role="all">📈 분석리포트</a>
+        <a href="ai-report.html" data-role="all">🤖 AI분석리포트</a>
+        <a href="print-page.html" data-role="all">🖨️ 인쇄/CSV</a>
+        <div class="menu-divider"></div>
+        <a href="supply-standard.html" data-role="admin,manager">⚙️ 급액기준등록</a>
+        <a href="zone-manage.html" data-role="admin,manager">📍 구역등록</a>
+        <a href="farm-settings.html" data-role="admin,manager">🏠 농장설정</a>
+        <a href="ai-settings.html" class="active" data-role="admin">🔧 AI분석설정</a>
+        <a href="account-manage.html" data-role="admin">👤 계정관리</a>
+      </div>
+      <!-- ✅ 구분선 -->
+      <div class="menu-divider"></div>
+      <!-- ✅ 하단 로고 — 농장설정과 완전 동일 -->
+      <div class="sidebar-logo-bottom">
+        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1_eng.png" alt="하단로고">
+      </div>
+      <!-- ✅ 날씨 영역 — 농장설정과 완전 동일 -->
+      <div class="weather-box" id="weatherBox">
+        <table class="weather-table">
+          <tr>
+            <td style="width: 35%;">
+              <div class="weather-icon" id="weatherIcon">🌤️</div>
+            </td>
+            <td style="width: 65%; text-align: left; padding-left: 8px;">
+              <div class="weather-temp" id="weatherTemp">--°</div>
+              <div class="weather-desc" id="weatherDesc">날씨 불러오는 중...</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <div class="weather-range" id="weatherRange">최저 --° / 최고 --°</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <div class="weather-location">서울시 강북구</div>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div style="margin-top:auto;"></div>
+    </aside>
+    <!-- ✅ 오른쪽: TOP바 + 내용 — 농장설정과 완전 동일 -->
+    <div class="right-column">
+      <header class="top-header">
+        <button class="header-hamburger" id="hamBtn">☰</button>
+        <div class="header-title-group">
+          <div class="header-title" id="topFarmName">농장정보 로딩중...</div>
+          <div class="top-meta" id="topFarmMeta">정보 불러오는 중...</div>
+        </div>
+      </header>
+      <!-- ✅ 내용 — AI설정 기능 전혀 건드리지 않고 그대로 유지 -->
+      <main class="content-wrapper">
+        <div class="container" id="adminArea" style="display:none;">
+          <div class="page-top-bar">
+            <h2 style="text-align:left; margin:0;">🔧 AI분석설정</h2>
+            <p style="margin:0; font-size:10.5px; color:#666;">AI 분석 모델을 등록하고 관리할 수 있습니다.</p>
+          </div>
+          <!-- ✅ AI 등록/수정 폼 -->
+          <div class="card">
+            <h3 id="formTitle">➕ AI 등록 <span class="note">※ 기본모델: gemini-3.6-flash</span></h3>
+            <input type="hidden" id="editId">
+            
+            <div class="ai-form-grid">
+              <!-- ✅ 1행: AI 이름 | 모델명 -->
+              <label>AI 이름 *</label>
+              <input type="text" id="aiName" placeholder="예: 종합분석AI">
+              
+              <label>모델명</label>
+              <div style="display:flex; gap:4px; width:100%;">
+                <select id="modelName" onchange="toggleCustomModel()" style="flex:1;">
+                  <option value="gemini-3.6-flash" selected>gemini-3.6-flash</option>
+                  <option value="gemini-3-pro">gemini-3-pro</option>
+                  <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                  <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                  <option value="gpt-4o">gpt-4o</option>
+                  <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                  <option value="">직접입력...</option>
+                </select>
+                <input type="text" id="modelNameCustom" placeholder="직접입력" style="width:100px; display:none;">
+              </div>
+              <!-- ✅ 2행: API 호출주소 | 분석역할 -->
+              <label>API 호출 주소</label>
+              <input type="text" id="apiEndpoint" placeholder="기본값 사용" 
+                     value="https://generativelanguage.googleapis.com/v1/models/">
+              
+              <label>분석 역할</label>
+              <select id="analysisRole">
+                <option value="종합분석" selected>종합분석</option>
+                <option value="생육분석">생육분석</option>
+                <option value="급액제안">급액제안</option>
+                <option value="이상탐지">이상탐지</option>
+                <option value="기타">기타</option>
+              </select>
+              <!-- ✅ 3행: API 키 -->
+              <label>API 키 *</label>
+              <input type="password" id="apiKey" placeholder="API 키 입력" style="grid-column:2 / -1;">
+              <!-- ✅ 4행: 추가 사항 -->
+              <label>추가 사항</label>
+              <textarea id="etcInfo" placeholder="참고사항 등 입력"></textarea>
+              <!-- ✅ 체크박스 -->
+              <div class="check-line">
+                <input type="checkbox" id="isMain">
+                <label for="isMain">종합 AI로 지정</label>
+              </div>
+              <!-- ✅ 버튼 -->
+              <div class="ai-form-btn-row">
+                <button onclick="saveAI()" class="btn-primary">💾 저장</button>
+                <button onclick="resetForm()" class="btn-secondary">🔄 초기화</button>
+              </div>
+            </div>
+          </div>
+          <!-- ✅ 등록된 AI 목록 -->
+          <div class="card">
+            <h3>📋 등록된 AI 목록</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>AI 이름</th>
+                  <th>모델명</th>
+                  <th>호출주소</th>
+                  <th>종합</th>
+                  <th>연결상태</th>
+                  <th>API 키</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
+              <tbody id="aiListBody">
+                <tr><td colspan="8">불러오는 중...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- ✅ 권한 제한 영역 -->
+        <div class="container" id="noPermitArea" style="display:none;">
+          <div class="card access-denied">
+            <h3>🔒 접근 권한이 없습니다</h3>
+            <p>AI분석설정은 최고관리자만 접근할 수 있습니다.</p>
+            <button class="btn-primary" onclick="location.href='dashboard.html'">대시보드로 돌아가기</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="overlay" id="overlay"></div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, addDoc, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
+    authDomain: "smartfarm-drainage-system.firebaseapp.com",
+    projectId: "smartfarm-drainage-system",
+    storageBucket: "smartfarm-drainage-system.firebasestorage.app",
+    messagingSenderId: "699907108321",
+    appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
+    measurementId: "G-W7L21Y8JZN"
+  };
+  
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const SETTINGS_COLL = "farm_settings_history";
+  const CURRENT_SETTING_ID = "current";
+  const DEFAULT_ENDPOINT = "https://generativelanguage.googleapis.com/v1/models/";
+  
+  let userRole = "";
+  let aiList = [];
+  let testStatus = {};
+  
+  const ROLE_ADMIN = "admin";
+  const ROLE_MANAGER = "manager";
+  const ROLE_WORKER = "worker";
+  const ROLE_GUEST = "guest";
+  
+  function getRoleName(role) {
+    const map = { admin:"최고관리자", manager:"매니저", worker:"공공근로자", guest:"게스트" };
+    return map[role] || role;
+  }
+  
+  function applyMenuPermissions(userRole) {
+    document.querySelectorAll(".sidebar-menu a").forEach(link => {
+      const allowedRoles = (link.dataset.role || "all").split(",");
+      if (allowedRoles.includes("all") || allowedRoles.includes(userRole)) {
+        link.classList.add("visible");
+      } else {
+        link.classList.remove("visible");
+      }
+    });
+  }
+  
+  // ✅ 날짜 포맷
+  function formatDateYmd(dateStr) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  
+  // ✅ 농장정보 불러오기 → TOP바에 표시 — 농장설정과 완전 동일
+  async function loadFarmInfo() {
+    try {
+      const snap = await getDoc(doc(db, "settings", CURRENT_SETTING_ID));
+      const topFarmNameEl = document.getElementById("topFarmName");
+      const topMetaEl = document.getElementById("topFarmMeta");
+      if (snap.exists()) {
+        const farm = snap.data();
+        topFarmNameEl.textContent = farm.farmName || "강북구 스마트팜 재배단지";
+        topMetaEl.innerHTML = `
+          <span>🌿 재배작물: ${farm.cropName || "딸기"}</span>
+          <span>🍓 품종: ${farm.variety || "금실"}</span>
+          <span>🌱 정식일: ${formatDateYmd(farm.plantingDate) || "-"}</span>
+        `;
+      } else {
+        topFarmNameEl.textContent = "강북구 스마트팜 재배단지";
+        topMetaEl.innerHTML = `<span style="color:#ffd700;">⚠️ 농장설정 미등록</span>`;
+      }
+    } catch (e) { 
+      console.log("농장설정 오류:", e); 
+      document.getElementById("topFarmName").textContent = "강북구 스마트팜 재배단지";
+      document.getElementById("topFarmMeta").innerHTML = `<span style="color:red;">정보 불러오기 오류</span>`;
+    }
+  }
+  
+  // ✅ 권한 확인 — 최고관리자만 접근
+  function checkAuth() {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    userRole = localStorage.getItem("userRole") || "";
+    
+    if (!user || !user.userId || !userRole) {
+      location.href = "index.html";
+      return null;
+    }
+    
+    const userName = user.userName || user.userId || "사용자";
+    document.getElementById("sidebarUserName").textContent = `${userName} ${getRoleName(userRole)}`;
+    applyMenuPermissions(userRole);
+    
+    if (userRole !== ROLE_ADMIN) {
+      document.getElementById("adminArea").style.display = "none";
+      document.getElementById("noPermitArea").style.display = "block";
+      return null;
+    }
+    
+    document.getElementById("adminArea").style.display = "block";
+    document.getElementById("noPermitArea").style.display = "none";
+    return { user, userRole };
+  }
+  
+  // ✅ 로그아웃
+  function doLogout() {
+    if (confirm("로그아웃 하시겠습니까?")) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("userRole");
+      location.href = "index.html";
+    }
+  }
+  
+  // ✅ 햄버거 + 로그아웃
+  document.addEventListener("click", e => {
+    if (e.target.id === "hamBtn" || e.target.closest("#hamBtn")) {
+      document.getElementById("sidebar").classList.toggle("open");
+      document.getElementById("overlay").classList.toggle("show");
+    }
+    if (e.target.id === "sidebarLogoutBtn" || e.target.closest("#sidebarLogoutBtn")) {
+      e.preventDefault();
+      doLogout();
+    }
+  });
+  
+  // ✅ 날씨 불러오기
+  async function loadWeather() {
+    try {
+      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.63&longitude=127.03&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=1");
+      const data = await res.json();
+      const temp = Math.round(data.current.temperature_2m * 10) / 10;
+      const minTemp = Math.round(data.daily.temperature_2m_min[0]);
+      const maxTemp = Math.round(data.daily.temperature_2m_max[0]);
+      const code = data.current.weather_code;
+      let icon = "☀️", desc = "맑음";
+      if (code === 1 || code === 2) { icon = "🌤️"; desc = "구름조금"; }
+      else if (code === 3) { icon = "☁️"; desc = "흐림"; }
+      else if (code >= 45 && code <= 48) { icon = "🌫️"; desc = "안개"; }
+      else if (code >= 51 && code <= 67) { icon = "🌧️"; desc = "비"; }
+      else if (code >= 71 && code <= 77) { icon = "❄️"; desc = "눈"; }
+      else if (code >= 80 && code <= 82) { icon = "🌧️"; desc = "소나기"; }
+      const elIcon = document.getElementById("weatherIcon");
+      const elTemp = document.getElementById("weatherTemp");
+      const elDesc = document.getElementById("weatherDesc");
+      const elRange = document.getElementById("weatherRange");
+      if(elIcon) elIcon.textContent = icon;
+      if(elTemp) elTemp.textContent = `${temp}°`;
+      if(elDesc) elDesc.textContent = desc;
+      if(elRange) elRange.textContent = `최저 ${minTemp}° / 최고 ${maxTemp}°`;
+    } catch(e) {
+      const elDesc = document.getElementById("weatherDesc");
+      if(elDesc) elDesc.textContent = "날씨 불러오기 실패";
+    }
+  }
+  
+  // ========== ✅ 아래 AI설정 기능 — 전혀 변경하지 않고 그대로 ==========
+  window.toggleCustomModel = function() {
+    const sel = document.getElementById("modelName").value;
+    const show = sel === "";
+    document.getElementById("modelNameCustom").style.display = show ? "block" : "none";
+  };
+  
+  window.saveAI = async function() {
+    const aiName = document.getElementById("aiName").value.trim();
+    const apiKey = document.getElementById("apiKey").value.trim();
+    const modelName = getSelectedModel();
+    let endpoint = document.getElementById("apiEndpoint").value.trim();
+    if (!endpoint) endpoint = DEFAULT_ENDPOINT;
+    
+    if (!aiName || !apiKey) return alert("AI 이름과 API 키는 필수입니다!");
+    
+    const isMain = document.getElementById("isMain").checked;
+    if (isMain) {
+      const existsMain = aiList.some(ai => ai.isMain && ai.id !== document.getElementById("editId").value);
+      if (existsMain) {
+        alert("종합 AI는 하나만 지정할 수 있습니다.\n기존 종합AI의 지정을 먼저 해제해주세요.");
+        return;
+      }
+    }
+    
+    const data = {
+      aiName,
+      modelName,
+      apiEndpoint: endpoint,
+      analysisRole: document.getElementById("analysisRole").value,
+      apiKey,
+      etcInfo: document.getElementById("etcInfo").value.trim(),
+      isMain,
+      updatedAt: new Date().toISOString()
+    };
+    
+    const editId = document.getElementById("editId").value;
+    try {
+      if (editId) {
+        await setDoc(doc(db, "ai_engines", editId), data, { merge: true });
+        alert("✅ 수정되었습니다!");
+      } else {
+        data.createdAt = new Date().toISOString();
+        await addDoc(collection(db, "ai_engines"), data);
+        alert("✅ 등록되었습니다!");
+      }
+      resetForm();
+      delete testStatus[editId];
+      await loadAIList();
+    } catch (e) {
+      alert("❌ 저장 실패: " + e.message);
+    }
+  };
+  
+  window.editAI = function(id) {
+    const ai = aiList.find(x => x.id === id);
+    if (!ai) return;
+    document.getElementById("editId").value = id;
+    document.getElementById("aiName").value = ai.aiName || "";
+    document.getElementById("apiEndpoint").value = ai.apiEndpoint || DEFAULT_ENDPOINT;
+    document.getElementById("apiKey").value = ai.apiKey || "";
+    document.getElementById("etcInfo").value = ai.etcInfo || "";
+    document.getElementById("isMain").checked = ai.isMain || false;
+    document.getElementById("analysisRole").value = ai.analysisRole || "종합분석";
+    
+    const sel = document.getElementById("modelName");
+    let found = false;
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === ai.modelName) {
+        sel.selectedIndex = i;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      sel.value = "";
+      document.getElementById("modelNameCustom").value = ai.modelName || "";
+      document.getElementById("modelNameCustom").style.display = "block";
+    } else {
+      document.getElementById("modelNameCustom").style.display = "none";
+    }
+    document.getElementById("formTitle").textContent = "✏️ AI 수정";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  
+  window.resetForm = function() {
+    document.getElementById("editId").value = "";
+    document.getElementById("formTitle").textContent = "➕ AI 등록";
+    document.getElementById("aiName").value = "";
+    document.getElementById("modelName").value = "gemini-3.6-flash";
+    document.getElementById("modelNameCustom").value = "";
+    document.getElementById("modelNameCustom").style.display = "none";
+    document.getElementById("apiEndpoint").value = DEFAULT_ENDPOINT;
+    document.getElementById("apiKey").value = "";
+    document.getElementById("analysisRole").value = "종합분석";
+    document.getElementById("etcInfo").value = "";
+    document.getElementById("isMain").checked = false;
+  };
+  
+  function getSelectedModel() {
+    let model = document.getElementById("modelName").value;
+    if (model === "") model = document.getElementById("modelNameCustom").value.trim();
+    return model || "gemini-3.6-flash";
+  }
+  
+  async function loadAIList() {
+    try {
+      const q = collection(db, "ai_engines");
+      const snap = await getDocs(q);
+      
+      aiList = snap.docs.map(d => ({
+        id: d.id,
+        isMain: false,
+        apiEndpoint: DEFAULT_ENDPOINT,
+        ...d.data()
+      }));
+      
+      aiList.sort((a, b) => {
+        if (a.isMain && !b.isMain) return -1;
+        if (!a.isMain && b.isMain) return 1;
+        return String(a.aiName || "").localeCompare(String(b.aiName || ""));
+      });
+      
+      renderList();
+    } catch (e) {
+      console.error("목록 불러오기 오류:", e);
+      document.getElementById("aiListBody").innerHTML = 
+        `<tr><td colspan="8" style="color:red;">불러오기 오류: ${e.message}</td></tr>`;
+    }
+  }
+  
+  function renderList() {
+    const tb = document.getElementById("aiListBody");
+    if (!aiList.length) {
+      tb.innerHTML = `<tr><td colspan="8" style="color:#888;">등록된 AI가 없습니다.</td></tr>`;
+      return;
+    }
+    tb.innerHTML = aiList.map(ai => {
+      const status = testStatus[ai.id] || { text: "미확인", class: "" };
+      const ep = (ai.apiEndpoint || DEFAULT_ENDPOINT).replace("https://", "").replace("http://", "");
+      const shortEp = ep.length > 7 ? "." + ep.slice(-6) : ep;
+      return `
+        <tr class="${ai.isMain?'main-ai':''}">
+          <td>${ai.aiName||"-"}</td>
+          <td>${(ai.modelName||"").substring(0,4)}•${(ai.modelName||"").slice(-1)}</td>
+          <td title="${ai.apiEndpoint||DEFAULT_ENDPOINT}">${shortEp}</td>
+          <td>${ai.isMain?"✅":"-"}</td>
+          <td id="stat-${ai.id}" class="${status.class}">
+            ${status.text}
+            ${!status.text.includes("확인중") ? `<button class="btn-sm test-btn" onclick="testConnection('${ai.id}')">연결</button>` : ""}
+          </td>
+          <td class="hidden-key">${(ai.apiKey||"").substring(0,1)}•${(ai.apiKey||"").slice(-1)}</td>
+          <td>
+            <button class="btn-sm btn-primary" onclick="editAI('${ai.id}')">수정</button>
+            <button class="btn-sm" style="background:#ffebee; color:#c62828;" onclick="deleteAI('${ai.id}')">삭제</button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+  
+  window.testConnection = async function(aiId) {
+    const ai = aiList.find(x => x.id === aiId);
+    if (!ai) return alert("AI 정보를 찾을 수 없습니다.");
+    
+    testStatus[aiId] = { text: "🔄 확인중...", class: "status-loading" };
+    renderList();
+    
+    try {
+      const apiKey = ai.apiKey || "";
+      const model = ai.modelName || "gemini-3.6-flash";
+      const endpoint = (ai.apiEndpoint || DEFAULT_ENDPOINT).trim();
+      
+      let url = endpoint;
+      if (!url.endsWith("/")) url += "/";
+      
+      if (endpoint.includes("generativelanguage.googleapis.com")) {
+        url += `${model}:generateContent?key=${apiKey}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: "안녕" }] }],
+            generationConfig: { maxOutputTokens: 5 }
+          })
+        });
+        if (res.ok) {
+          testStatus[aiId] = { text: "✅ 연결성공", class: "status-ok" };
+        } else {
+          const err = await res.json();
+          throw new Error(err.error?.message || `오류 ${res.status}`);
+        }
+      } else if (endpoint.includes("api.openai.com")) {
+        url += "chat/completions";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [{ role: "user", content: "안녕" }],
+            max_tokens: 5
+          })
+        });
+        if (res.ok) {
+          testStatus[aiId] = { text: "✅ 연결성공", class: "status-ok" };
+        } else {
+          const err = await res.json();
+          throw new Error(err.error?.message || `오류 ${res.status}`);
+        }
+      } else {
+        url += `?key=${apiKey}`;
+        const res = await fetch(url, { method: "HEAD" });
+        testStatus[aiId] = { 
+          text: res.ok ? "✅ 연결확인" : `⚠️ 응답${res.status}`, 
+          class: res.ok ? "status-ok" : "status-fail" 
+        };
+      }
+    } catch (e) {
+      testStatus[aiId] = { text: "❌ 실패", class: "status-fail" };
+      alert(`연결 실패: ${e.message}\n\n💡 호출주소, API키, 모델명을 확인하세요.`);
+    }
+    renderList();
+  };
+  
+  window.deleteAI = async function(id) {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    await deleteDoc(doc(db, "ai_engines", id));
+    delete testStatus[id];
+    alert("✅ 삭제되었습니다!");
+    await loadAIList();
+  };
+  
+  // ✅ 페이지 로드 — 농장설정과 동일하게 모든 기능 호출
+  window.onload = async () => {
+    const auth = checkAuth();
+    if (!auth) return;
+    await loadFarmInfo(); // ✅ 상단 농장정보 불러오기
+    loadWeather();        // ✅ 날씨 불러오기
+    await loadAIList();   // ✅ AI목록 불러오기
+  };
+</script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <script src="js/common.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인 · 강북구 스마트팜 재배단지</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, "Noto Sans KR", sans-serif; }
+
+    /* ✅ 배경 동영상 및 레이아웃 설정 */
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 1. 동영상 태그 스타일 */
+    .bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: blur(1px);
+      z-index: -2;
+    }
+
+    /* 2. 동영상 위 톤 조절용 오버레이 (그라데이션) */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(rgba(47, 70, 56, 0.45), rgba(5, 8, 6, 0.55));
+      z-index: -1;
+    }
+
+    .login-box {
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.100), rgba(225, 240, 247, 0.50));
+      border-radius: 5px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      width: 100%;
+      max-width: 300px;
+      padding: 35px 20px;
+      margin: 16px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .login-box h2 {
+      text-align: center;
+      color: #0d2e75;
+      margin: 0 0 6px 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .login-box p {
+      text-align: center;
+      color: #000000;
+      margin: 0 0 24px 0;
+      font-size: 14px;
+    }
+    .logo-area {
+      text-align: center;
+      margin-bottom: 10px;
+      filter: contrast(200%) brightness(100%);
+      filter: drop-shadow(0px 1px 5px rgba(255, 255, 255, 0.8));
+    }
+    .logo-area img {
+      height: 52px;
+    }
+
+    /* ✅ 입력창 + 비밀번호보기 버튼 */
+    .input-group {
+      position: relative;
+      margin: 8px 0 12px 0;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 12px 44px 12px 14px;
+      border: 1px solid #000000;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #000000;
+      background: #fbff05;
+    }
+    .input-group input:focus {
+      outline: none;
+      border-color: #2f62d3;
+      box-shadow: 0 0 0 3px rgba(47, 98, 211, 0.1);
+    }
+    .pw-toggle {
+      position: absolute;
+      right: 0px;
+      top: 60%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #888;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .pw-toggle:hover {
+      background: #f0f0f0;
+    }
+
+    /* ✅ 아이디 저장 체크박스 */
+    .save-id-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 4px 0 12px 4px;
+    }
+    .save-id-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #2f62d3;
+    }
+    .save-id-row label {
+      font-size: 13px;
+      color: #ffffff;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .login-box button[type="button"] {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #42a5f5, #1976d2);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.15s ease;
+    }
+    .login-box button[type="button"]:hover {
+      background: linear-gradient(135deg, #acf1b2, #0bbd05);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(56, 153, 250, 0.25);
+    }
+    .login-box button[type="button"]:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .error-msg {
+      color: #d32f2f;
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+      text-align: center;
+      padding: 8px;
+      background: #ffebee;
+      border-radius: 4px;
+    }
+    .info-note {
+      font-size: 12px;
+      color: #f8f2f6;
+      margin-top: 16px;
+      text-align: center;
+      line-height: 1.4;
+    }
+    .loading {
+      text-align: center;
+      margin-top: 12px;
+      color: #2e7d32;
+      display: none;
+      font-size: 14px;
+      padding: 8px;
+      background: #e8f5e9;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <!-- ✅ 배경 동영상 태그 -->
+  <video class="bg-video" autoplay loop muted playsinline>
+    <source src="https://github.com/jeema73/adal_king/raw/refs/heads/main/KakaoTalk_20260130_152657302.mp4" type="video/mp4">
+  </video>
+
+  <div class="login-box">
+    <div class="logo-area">
+      <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1.png" alt="강북구 로고">
+    </div>
+    <h2>고설대 배지 배액관리 시스템</h2>
+    <p>강북구 스마트팜 재배단지</p>
+
+    <!-- ✅ 아이디 입력 -->
+    <div class="input-group">
+      <input type="text" id="loginId" placeholder="아이디">
+    </div>
+
+    <!-- ✅ 비밀번호 + 보기/숨기기 버튼 -->
+    <div class="input-group">
+      <input type="password" id="loginPw" placeholder="비밀번호">
+      <button type="button" class="pw-toggle" id="pwToggle" title="비밀번호 보기">👁️</button>
+    </div>
+
+    <!-- ✅ 아이디 저장 체크박스 -->
+    <div class="save-id-row">
+      <input type="checkbox" id="saveId">
+      <label for="saveId">아이디 저장</label>
+    </div>
+
+    <button type="button" id="loginBtn">🔐 로그인</button>
+    <div class="error-msg" id="errMsg"></div>
+    <div class="loading" id="loadingMsg">✅ 로그인 성공! 잠시만 기다려주세요...</div>
+    <div class="info-note">
+      💡 토큰.. 토큰.. 주세요 ㅠㅠ😭😵‍💫😵
+    </div>
+  </div>
+
+<script>
+  const DEFAULT_ADMIN = {
+    userId: "admin",
+    userPw: "admin1234",
+    userName: "최고관리자",
+    userRole: "admin"
+  };
+
+  // ✅ 아이디 저장 — 불러오기
+  function loadSavedId() {
+    const savedId = localStorage.getItem("savedLoginId");
+    const saveIdCheck = document.getElementById("saveId");
+    if (savedId) {
+      document.getElementById("loginId").value = savedId;
+      saveIdCheck.checked = true;
+    }
+  }
+
+  // ✅ 아이디 저장 — 저장하기
+  function saveIdPreference(id) {
+    const saveIdCheck = document.getElementById("saveId");
+    if (saveIdCheck.checked && id) {
+      localStorage.setItem("savedLoginId", id);
+    } else {
+      localStorage.removeItem("savedLoginId");
+    }
+  }
+
+  // ✅ 비밀번호 보기/숨기기 토글
+  document.addEventListener("click", e => {
+    if (e.target.id === "pwToggle" || e.target.closest("#pwToggle")) {
+      const pwInput = document.getElementById("loginPw");
+      const toggleBtn = document.getElementById("pwToggle");
+      if (pwInput.type === "password") {
+        pwInput.type = "text";
+        toggleBtn.textContent = "🙈";
+        toggleBtn.title = "비밀번호 숨기기";
+      } else {
+        pwInput.type = "password";
+        toggleBtn.textContent = "👁️";
+        toggleBtn.title = "비밀번호 보기";
+      }
+    }
+  });
+
+  async function doLogin() {
+    console.log("👉 로그인 버튼 클릭됨!");
+    const id = document.getElementById("loginId").value.trim();
+    const pw = document.getElementById("loginPw").value;
+    const errBox = document.getElementById("errMsg");
+    const loading = document.getElementById("loadingMsg");
+    const loginBtn = document.getElementById("loginBtn");
+
+    localStorage.removeItem("user");
+    localStorage.removeItem("userRole");
+    errBox.style.display = "none";
+    loading.style.display = "none";
+    loginBtn.disabled = true;
+    loginBtn.textContent = "확인 중...";
+
+    if (!id || !pw) {
+      errBox.textContent = "아이디와 비밀번호를 입력하세요.";
+      errBox.style.display = "block";
+      loginBtn.disabled = false;
+      loginBtn.textContent = "🔐 로그인";
+      return;
+    }
+
+    // ✅ 아이디 저장 처리
+    saveIdPreference(id);
+
+    try {
+      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js");
+      const { getFirestore, collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js");
+      
+      const firebaseConfig = {
+        apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
+        authDomain: "smartfarm-drainage-system.firebaseapp.com",
+        projectId: "smartfarm-drainage-system",
+        storageBucket: "smartfarm-drainage-system.firebasestorage.app",
+        messagingSenderId: "699907108321",
+        appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
+        measurementId: "G-W7L21Y8JZN"
+      };
+      
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      let found = null;
+
+      // ✅ 최고관리자
+      if (id === DEFAULT_ADMIN.userId && pw === DEFAULT_ADMIN.userPw) {
+        found = DEFAULT_ADMIN;
+      } 
+      // ✅ DB 계정
+      else {
+        const q = query(collection(db, "accounts"), where("userId", "==", id));
+        const snap = await getDocs(q);
+        snap.forEach(doc => {
+          const d = doc.data();
+          if (d.userPw === pw) {
+            found = { ...d, id: doc.id };
+          }
+        });
+      }
+
+      if (found) {
+        console.log("✅ 로그인 성공:", found.userId, "/", found.userRole);
+        
+        // ✅ 정보 저장
+        localStorage.setItem("user", JSON.stringify({ 
+          id: found.id || "", 
+          userId: found.userId, 
+          userName: found.userName 
+        }));
+        localStorage.setItem("userRole", found.userRole);
+        
+        loading.style.display = "block";
+        // ✅ 대시보드로 이동
+        setTimeout(() => {
+          console.log("➡️ 대시보드로 이동합니다...");
+          window.location.replace("dashboard.html");
+        }, 800);
+        return;
+      } else {
+        errBox.textContent = "아이디 또는 비밀번호가 일치하지 않습니다.";
+        errBox.style.display = "block";
+      }
+    } catch (e) {
+      errBox.textContent = "오류: " + e.message;
+      errBox.style.display = "block";
+      console.error("❌ 오류:", e);
+    }
+
+    loginBtn.disabled = false;
+    loginBtn.textContent = "🔐 로그인";
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("✅ 페이지 준비 완료");
+    loadSavedId(); // ✅ 저장된 아이디 불러오기
+    document.getElementById("loginBtn").addEventListener("click", doLogin);
+    document.getElementById("loginPw").addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); doLogin(); }
+    });
+    document.getElementById("loginId").addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); document.getElementById("loginPw").focus(); }
+    });
+  });
+</script>
+</body>
+</html>

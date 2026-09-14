@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <script src="js/common.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>급액기준등록 · 강북구 스마트팜</title>
+  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="icon" href="data:;base64,=">
+  <style>
+    /* ✅ 전체 페이지 배경 */
+    body {
+      background: none;
+      background-color: #f5f5f5;
+    }
+    body::before { display: none; }
+    /* ✅ TOP바 — 인쇄페이지와 완전 동일 */
+    .top-header {
+      background: 
+        linear-gradient(rgba(47, 70, 56, 0.55), rgba(5, 8, 6, 0.55)),
+        url("https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNjA4MThfMjgy%2FMDAxNzg3MDM3MjU3NDA2.4ypGxvywbosdDIW5SOx70sO59WN6BiVoJx9jyh6zm9kg.0yvw-6Je2OJWoG0uXfYA9QuhnJz2nUkA_BH2oqEjv0Yg.JPEG%2F_CYL7346.jpg&type=a340") no-repeat center center !important;
+      background-size: cover !important;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .header-title {
+      color: #fffacf !important;
+      font-weight: bold;
+      font-size: 18px !important;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .top-meta {
+      font-size: 11.5px;
+      color: #faf9d6;
+      margin-top: 2px;
+      line-height: 1.4;
+      opacity: 0.95;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+    .top-meta span { display: inline-block; margin-right: 14px; }
+
+    /* ✅ 권한 메뉴 */
+    .sidebar-menu a { display: none; }
+    .sidebar-menu a.visible { display: block; }
+
+    /* ✅ 사용자 정보 박스 */
+    .user-info-box {
+      background: rgba(0, 70, 27, 0.4);
+      backdrop-filter: blur(4px);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 8px;
+      border: 1px solid rgba(4, 199, 53, 0.15);
+    }
+    .user-info-box .sys-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #b5c8f1;
+      margin-bottom: 4px;
+    }
+    .sys-name1 {
+      font-size: 9px;
+      font-weight: bold;
+      color: #6b99fc;
+      margin-bottom: 1px;
+    }
+    .user-info-box .user-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+    .user-name {
+      font-weight: normal;
+      color: #f9fc3e;
+      font-size: 11px;
+    }
+    .logout-btn {
+      font-size: 9px;
+      padding: 2px 6px;
+      background: #ffffff;
+      border: 0px solid #000000;
+      border-radius: 9px;
+      color: #000c01;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    /* ✅ 하단 로고 영역 */
+    .sidebar-logo-bottom {
+      text-align: center;
+      padding: 8px 6px;
+      margin: 4px 8px;
+    }
+    .sidebar-logo-bottom img {
+      width: 50%;
+      height: auto;
+      opacity: 0.85;
+    }
+
+    /* ✅ 날씨 영역 */
+    .sidebar .weather-box {
+      padding: 6px !important;
+      margin: 4px 8px 10px 8px !important;
+      background: linear-gradient(135deg, #2c463e, #355837) !important;
+      border-radius: 8px !important;
+      border: 0px solid #546154 !important;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+    .sidebar .weather-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      background: transparent !important;
+    }
+    .sidebar .weather-table td {
+      border: 0px solid rgba(255, 255, 255, 0.2) !important;
+      padding: 4px 6px !important;
+      vertical-align: middle !important;
+      text-align: center !important;
+      background: transparent !important;
+      color: #ffffff !important;
+    }
+    .sidebar .weather-icon {
+      font-size: 35px !important;
+      line-height: 1 !important;
+    }
+    .sidebar .weather-temp {
+      font-size: 22px !important;
+      font-weight: bold !important;
+      color: #dbb1b1 !important;
+    }
+    .sidebar .weather-desc {
+      font-size: 10px !important;
+      color: #e8f5e9 !important;
+      margin-top: 0px !important;
+    }
+    .sidebar .weather-range, 
+    .sidebar .weather-location {
+      font-size: 10px !important;
+      color: #f1f8e9 !important;
+      text-align: center !important;
+    }
+
+    /* ✅ 급액기준등록 본문 스타일 — 기존 그대로 유지 */
+    .card { 
+      background: #fff; 
+      border-radius: 8px; 
+      padding: 12px; 
+      margin-bottom: 8px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    h3 { font-size: 12px; margin: 0 0 10px 0; }
+    .form-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+    .form-row label { width: 90px; font-size: 12px; font-weight: bold; }
+    .form-row input, .form-row select { flex: 1; min-width: 110px; padding: 5px 6px; font-size: 12px; }
+    .form-row.short input { flex: 0 0 80px; }
+    .btn-area { margin-top: 12px; text-align: right; }
+    button { padding: 6px 14px; margin-left: 6px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; }
+    .btn-primary { background: #2196f3; color: #fff; }
+    .btn-reset { background: #eee; color: #333; }
+    .btn-del { background: #ffebee; color: #c62828; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+    th, td { padding: 6px 4px; border: 1px solid #ddd; text-align: center; }
+    th { background: #f5f5f5; }
+    .empty-box { text-align: center; color: #888; padding: 20px !important; }
+    .edit-link { color: #2196f3; cursor: pointer; font-size: 11px; }
+    .del-link { color: #c62828; cursor: pointer; font-size: 11px; margin-left: 6px; }
+    @media (max-width:480px) {
+      .form-row { gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ✅ 전체 레이아웃 — 인쇄페이지와 완전 동일 -->
+  <div class="app-layout">
+    <!-- ✅ 왼쪽 사이드바 — 인쇄페이지와 완전 동일 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo-top">
+        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1.png" alt="강북구 로고">
+      </div>
+
+      <!-- ✅ 사용자 정보 박스 -->
+      <div class="user-info-box" id="userInfoBox">
+        <div class="sys-name1">Drainage system</div>
+        <div class="sys-name">배액 관리 시스템</div>
+        <div class="menu-divider1"></div>
+        <div class="user-row">
+          <span class="user-name" id="sidebarUserName">사용자 정보</span>
+          <a href="#" class="logout-btn" id="sidebarLogoutBtn">LOGOUT</a>
+        </div>
+      </div>
+      <div class="menu-divider"></div>
+
+      <!-- ✅ 메뉴 — 권한별 보임/숨김 -->
+      <div class="sidebar-menu" id="sidebarMenu">
+        <a href="dashboard.html" data-role="all">📊 대시보드</a>
+        <a href="drain-record.html" data-role="all">📝 배액기록</a>
+        <a href="analysis-report.html" data-role="all">📈 분석리포트</a>
+        <a href="ai-report.html" data-role="all">🤖 AI분석리포트</a>
+        <a href="print-page.html" data-role="all">🖨️ 인쇄/CSV</a>
+        <div class="menu-divider"></div>
+        <a href="supply-standard.html" class="active" data-role="admin,manager">⚙️ 급액기준등록</a>
+        <a href="zone-manage.html" data-role="admin,manager">📍 구역등록</a>
+        <a href="farm-settings.html" data-role="admin,manager">🏠 농장설정</a>
+        <a href="ai-settings.html" data-role="admin">🔧 AI분석설정</a>
+        <a href="account-manage.html" data-role="admin">👤 계정관리</a>
+      </div>
+
+      <!-- ✅ 구분선 -->
+      <div class="menu-divider"></div>
+
+      <!-- ✅ 하단 로고 -->
+      <div class="sidebar-logo-bottom">
+        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1_eng.png" alt="하단로고">
+      </div>
+
+      <!-- ✅ 날씨 영역 -->
+      <div class="weather-box" id="weatherBox">
+        <table class="weather-table">
+          <tr>
+            <td style="width: 35%;">
+              <div class="weather-icon" id="weatherIcon">🌤️</div>
+            </td>
+            <td style="width: 65%; text-align: left; padding-left: 8px;">
+              <div class="weather-temp" id="weatherTemp">--°</div>
+              <div class="weather-desc" id="weatherDesc">날씨 불러오는 중...</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <div class="weather-range" id="weatherRange">최저 --° / 최고 --°</div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <div class="weather-location">서울시 강북구</div>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div style="margin-top:auto;"></div>
+    </aside>
+
+    <!-- ✅ 오른쪽: TOP바 + 내용 -->
+    <div class="right-column">
+      <header class="top-header">
+        <button class="header-hamburger" id="hamBtn">☰</button>
+        <div class="header-title-group">
+          <div class="header-title" id="topFarmName">농장정보 로딩중...</div>
+          <div class="top-meta" id="topFarmMeta">정보 불러오는 중...</div>
+        </div>
+      </header>
+
+      <!-- ✅ 내용 — 기존 급액기준등록 기능 그대로 유지 -->
+      <main class="content-wrapper">
+        <div class="container" id="adminArea" style="display:none;">
+          <div class="page-top-bar">
+            <h2>⚙️ 급액 기준 관리</h2>
+            <p>기준일자별·라인별 급액 EC/pH 기준값을 관리합니다. <strong>최신 기준이 자동 적용</strong>됩니다.</p>
+          </div>
+
+          <!-- ✅ 등록/수정 폼 -->
+          <div class="card">
+            <h3 id="formTitle">➕ 기준 등록</h3>
+            <input type="hidden" id="editId">
+            <div class="form-row">
+              <label>생육단계</label>
+              <input type="text" id="periodName" placeholder="예: 활착기, 생육기, 비대기, 수확기" list="periodSuggest">
+              <datalist id="periodSuggest">
+                <option value="활착기"></option>
+                <option value="생육기"></option>
+                <option value="비대기"></option>
+                <option value="수확기 초기"></option>
+                <option value="수확기 중기"></option>
+                <option value="수확기 후기"></option>
+              </datalist>
+            </div>
+            <div class="form-row">
+              <label>적용일자</label>
+              <input type="date" id="standardDate">
+              <label>라인</label>
+              <select id="lineNo">
+                <option value="V01">V01 라인</option>
+                <option value="V02">V02 라인</option>
+                <option value="V03">V03 라인</option>
+              </select>
+            </div>
+            <div class="form-row short">
+              <label>목표 EC</label>
+              <input type="number" step="0.01" id="targetEc" placeholder="예: 1.20">
+              <label>목표 pH</label>
+              <input type="number" step="0.1" id="targetPh" placeholder="예: 6.5">
+              <label>배액율(%)</label>
+              <input type="number" step="1" id="drainRate" placeholder="예: 30">
+            </div>
+            <div class="form-row">
+              <label>비고</label>
+              <input type="text" id="remark" placeholder="참고사항이 있으면 입력">
+            </div>
+            <div class="btn-area">
+              <button class="btn-reset" onclick="resetForm()">초기화</button>
+              <button class="btn-primary" onclick="saveStandard()">💾 저장</button>
+            </div>
+          </div>
+
+          <!-- ✅ 기준 목록 -->
+          <div class="card">
+            <h3>📋 기준 목록 (최신순)</h3>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>생육단계</th>
+                    <th>적용일자</th>
+                    <th>라인</th>
+                    <th>목표EC</th>
+                    <th>목표pH</th>
+                    <th>배액율</th>
+                    <th>비고</th>
+                    <th>관리</th>
+                  </tr>
+                </thead>
+                <tbody id="listBody">
+                  <tr><td colspan="8" class="empty-box">불러오는 중...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="overlay" id="overlay"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, addDoc, query, orderBy, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
+    authDomain: "smartfarm-drainage-system.firebaseapp.com",
+    projectId: "smartfarm-drainage-system",
+    storageBucket: "smartfarm-drainage-system.firebasestorage.app",
+    messagingSenderId: "699907108321",
+    appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
+    measurementId: "G-W7L21Y8JZN"
+  };
+  
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const FARM_SETTINGS_ID = "current";
+  let userRole = "";
+
+  // ✅ 권한 상수
+  const ROLE_ADMIN = "admin";
+  const ROLE_MANAGER = "manager";
+  const ROLE_WORKER = "worker";
+  const ROLE_GUEST = "guest";
+  function getRoleName(role) {
+    const map = { admin:"최고관리자", manager:"매니저", worker:"공공근로자", guest:"게스트" };
+    return map[role] || role;
+  }
+  function applyMenuPermissions(userRole) {
+    document.querySelectorAll(".sidebar-menu a").forEach(link => {
+      const allowedRoles = (link.dataset.role || "all").split(",");
+      if (allowedRoles.includes("all") || allowedRoles.includes(userRole)) {
+        link.classList.add("visible");
+      } else {
+        link.classList.remove("visible");
+      }
+    });
+  }
+
+  // ✅ 날짜 포맷
+  function formatDateYmd(dateStr) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // ✅ 농장정보 불러오기 → TOP바에 표시
+  async function loadFarmInfo() {
+    try {
+      const snap = await getDoc(doc(db, "settings", FARM_SETTINGS_ID));
+      const topFarmNameEl = document.getElementById("topFarmName");
+      const topMetaEl = document.getElementById("topFarmMeta");
+      if (snap.exists()) {
+        const farm = snap.data();
+        topFarmNameEl.textContent = farm.farmName || "강북구 스마트팜 재배단지";
+        topMetaEl.innerHTML = `
+          <span>🌿 재배작물: ${farm.cropType || "딸기"}</span>
+          <span>🍓 품종: ${farm.variety || "금실"}</span>
+          <span>🌱 정식일: ${formatDateYmd(farm.plantingDate) || "-"}</span>
+        `;
+      } else {
+        topFarmNameEl.textContent = "강북구 스마트팜 재배단지";
+        topMetaEl.innerHTML = `<span style="color:#ffd700;">⚠️ 농장설정 미등록</span>`;
+      }
+    } catch (e) { 
+      console.log("농장설정 오류:", e); 
+      document.getElementById("topFarmName").textContent = "강북구 스마트팜 재배단지";
+      document.getElementById("topFarmMeta").innerHTML = `<span style="color:red;">정보 불러오기 오류</span>`;
+    }
+  }
+
+  // ✅ 권한 확인 함수 (admin, manager 허용)
+  function checkAuth() {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    userRole = localStorage.getItem("userRole") || "";
+    const allowRoles = ["admin", "manager"];
+    
+    if (!user || !user.userId || !userRole) {
+      location.href = "index.html";
+      return null;
+    }
+    
+    if (!allowRoles.includes(userRole)) {
+      alert("접근 권한이 없습니다.");
+      location.href = "dashboard.html";
+      return null;
+    }
+    const userName = user.userName || user.userId || "사용자";
+    document.getElementById("sidebarUserName").textContent = `${userName} ${getRoleName(userRole)}`;
+    applyMenuPermissions(userRole);
+    document.getElementById("adminArea").style.display = "block";
+    return { user, userRole };
+  }
+
+  // ✅ 로그아웃
+  function doLogout() {
+    if (confirm("로그아웃 하시겠습니까?")) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("userRole");
+      location.href = "index.html";
+    }
+  }
+
+  // ✅ 햄버거 + 로그아웃
+  document.addEventListener("click", e => {
+    if (e.target.id === "hamBtn" || e.target.closest("#hamBtn")) {
+      document.getElementById("sidebar").classList.toggle("open");
+      document.getElementById("overlay").classList.toggle("show");
+    }
+    if (e.target.id === "sidebarLogoutBtn" || e.target.closest("#sidebarLogoutBtn")) {
+      e.preventDefault();
+      doLogout();
+    }
+  });
+
+  // ✅ 날씨 불러오기
+  async function loadWeather() {
+    try {
+      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.63&longitude=127.03&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=1");
+      const data = await res.json();
+      const temp = Math.round(data.current.temperature_2m * 10) / 10;
+      const minTemp = Math.round(data.daily.temperature_2m_min[0]);
+      const maxTemp = Math.round(data.daily.temperature_2m_max[0]);
+      const code = data.current.weather_code;
+      let icon = "☀️", desc = "맑음";
+      if (code === 1 || code === 2) { icon = "🌤️"; desc = "구름조금"; }
+      else if (code === 3) { icon = "☁️"; desc = "흐림"; }
+      else if (code >= 45 && code <= 48) { icon = "🌫️"; desc = "안개"; }
+      else if (code >= 51 && code <= 67) { icon = "🌧️"; desc = "비"; }
+      else if (code >= 71 && code <= 77) { icon = "❄️"; desc = "눈"; }
+      else if (code >= 80 && code <= 82) { icon = "🌧️"; desc = "소나기"; }
+      const elIcon = document.getElementById("weatherIcon");
+      const elTemp = document.getElementById("weatherTemp");
+      const elDesc = document.getElementById("weatherDesc");
+      const elRange = document.getElementById("weatherRange");
+      if(elIcon) elIcon.textContent = icon;
+      if(elTemp) elTemp.textContent = `${temp}°`;
+      if(elDesc) elDesc.textContent = desc;
+      if(elRange) elRange.textContent = `최저 ${minTemp}° / 최고 ${maxTemp}°`;
+    } catch(e) {
+      const elDesc = document.getElementById("weatherDesc");
+      if(elDesc) elDesc.textContent = "날씨 불러오기 실패";
+    }
+  }
+
+  // ✅ 페이지 최초 로드
+  window.onload = async () => {
+    const auth = checkAuth();
+    if (!auth) return;
+    await loadFarmInfo();
+    loadWeather();
+    document.getElementById("standardDate").valueAsDate = new Date();
+    await loadList();
+  };
+
+  // ✅ 목록 불러오기
+  async function loadList() {
+    try {
+      const q = query(collection(db, "supply_standards"), orderBy("standardDate", "desc"));
+      const snap = await getDocs(q);
+      const list = snap.docs.map(d => ({id:d.id, ...d.data()}));
+      renderList(list);
+    } catch (e) {
+      console.error("목록 불러오기 오류:", e);
+      document.getElementById("listBody").innerHTML = `<tr><td colspan="8" class="empty-box">오류: ${e.message}</td></tr>`;
+    }
+  }
+
+  // ✅ 목록 그리기
+  function renderList(list) {
+    const tb = document.getElementById("listBody");
+    if (!list.length) {
+      tb.innerHTML = `<tr><td colspan="8" class="empty-box">등록된 기준이 없습니다. 위에서 먼저 등록하세요.</td></tr>`;
+      return;
+    }
+    tb.innerHTML = list.map(r => `
+      <tr>
+        <td>${r.periodName||"-"}</td>
+        <td>${r.standardDate||"-"}</td>
+        <td>${r.lineNo||r.line||"V01"}</td>
+        <td>${r.targetEc||r.supplyEc||"-"}</td>
+        <td>${r.targetPh||r.supplyPh||"-"}</td>
+        <td>${r.drainRate||"-"}%</td>
+        <td>${r.remark||"-"}</td>
+        <td>
+          <span class="edit-link" onclick="editItem('${r.id}')">수정</span>
+          ${(userRole==='admin'||userRole==='manager')?`<span class="del-link" onclick="delItem('${r.id}')">삭제</span>`:""}
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  // ✅ 저장 (등록/수정)
+  window.saveStandard = async function() {
+    const periodName = document.getElementById("periodName").value.trim();
+    const standardDate = document.getElementById("standardDate").value;
+    const lineNo = document.getElementById("lineNo").value;
+    const targetEc = document.getElementById("targetEc").value;
+    const targetPh = document.getElementById("targetPh").value;
+    const drainRate = document.getElementById("drainRate").value;
+    const remark = document.getElementById("remark").value.trim();
+    const editId = document.getElementById("editId").value;
+    if (!periodName) return alert("생육단계명을 입력하세요!\n(예: 활착기, 비대기, 수확기)");
+    if (!standardDate) return alert("적용일자를 입력하세요!");
+    if (!targetEc || !targetPh) return alert("목표 EC와 pH 값을 입력하세요!");
+    const data = {
+      periodName, standardDate, lineNo,
+      targetEc: parseFloat(targetEc), targetPh: parseFloat(targetPh),
+      drainRate: drainRate ? parseInt(drainRate) : null,
+      remark, updatedAt: new Date().toISOString()
+    };
+    try {
+      if (editId) {
+        await setDoc(doc(db, "supply_standards", editId), data, { merge: true });
+        alert("✅ 수정되었습니다!");
+      } else {
+        data.createdAt = new Date().toISOString();
+        await addDoc(collection(db, "supply_standards"), data);
+        alert("✅ 등록되었습니다!");
+      }
+      resetForm();
+      await loadList();
+    } catch (e) {
+      alert("❌ 저장 실패: " + e.message);
+    }
+  };
+
+  // ✅ 수정 클릭 → 폼에 채우기
+  window.editItem = async function(id) {
+    try {
+      const q = query(collection(db, "supply_standards"));
+      const snap = await getDocs(q);
+      const found = snap.docs.find(d => d.id === id);
+      if (!found) return alert("데이터를 찾을 수 없습니다.");
+      const r = found.data();
+      document.getElementById("editId").value = id;
+      document.getElementById("periodName").value = r.periodName || "";
+      document.getElementById("standardDate").value = r.standardDate || "";
+      document.getElementById("lineNo").value = r.lineNo || r.line || "V01";
+      document.getElementById("targetEc").value = r.targetEc || r.supplyEc || "";
+      document.getElementById("targetPh").value = r.targetPh || r.supplyPh || "";
+      document.getElementById("drainRate").value = r.drainRate || "";
+      document.getElementById("remark").value = r.remark || "";
+      document.getElementById("formTitle").textContent = "✏️ 기준 수정";
+      window.scrollTo({top:0, behavior:'smooth'});
+    } catch (e) {
+      alert("수정 오류: " + e.message);
+    }
+  };
+
+  // ✅ 삭제
+  window.delItem = async function(id) {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    try {
+      await deleteDoc(doc(db, "supply_standards", id));
+      alert("✅ 삭제되었습니다!");
+      await loadList();
+    } catch (e) {
+      alert("❌ 삭제 실패: " + e.message);
+    }
+  };
+
+  // ✅ 폼 초기화
+  window.resetForm = function() {
+    document.getElementById("editId").value = "";
+    document.getElementById("periodName").value = "";
+    document.getElementById("standardDate").valueAsDate = new Date();
+    document.getElementById("lineNo").value = "V01";
+    document.getElementById("targetEc").value = "";
+    document.getElementById("targetPh").value = "";
+    document.getElementById("drainRate").value = "";
+    document.getElementById("remark").value = "";
+    document.getElementById("formTitle").textContent = "➕ 기준 등록";
+  };
+</script>
+</body>
+</html>
