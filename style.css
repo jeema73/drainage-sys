@@ -105,9 +105,7 @@ button, input, select, textarea { font-family: inherit; font-size: 10.5px; }
 .weather-range { font-size: 10.5px; color: #EAF2EC; font-weight: 500; text-align: center; padding-top: 4px; margin-top: 2px; }
 .weather-location { font-size: 9.5px; color: rgba(255, 255, 255, 0.45); text-align: center; padding-top: 3px; letter-spacing: 0.3px; }
 
-/* =====================================================
-   ✅ 날씨 테이블 — 마우스오버 색상변화 완전 제거
-   ===================================================== */
+/* ✅ 날씨 테이블 호버 색상변화 제거 */
 .weather-table tr:hover td,
 .weather-table tr:hover th,
 .weather-table tbody tr:hover td,
@@ -115,6 +113,7 @@ button, input, select, textarea { font-family: inherit; font-size: 10.5px; }
 .sidebar .weather-table tr:hover th {
   background: transparent !important;
 }
+
 /* =====================================================
    3. 공통 UI 컴포넌트
    ===================================================== */
@@ -140,13 +139,6 @@ button, input, select, textarea { font-family: inherit; font-size: 10.5px; }
   padding: 14px 16px; margin-bottom: 16px;
 }
 .card h3 { font-size: 12px; font-weight: 600; color: var(--green-main); margin-bottom: 9px; padding-bottom: 5px; border-bottom: 1px solid var(--border-line); }
-
-/* 버튼 */
-.btn { border: none; border-radius: 6px; padding: 6px 12px; font-size: 10.5px; font-weight: 600; cursor: pointer; }
-.btn.primary { background: var(--green-main); color: white; }
-.btn.primary:hover { background: #3A6649; }
-.btn.secondary { background: var(--yellow-header); color: var(--warn-text); border: 1px solid var(--yellow-border); }
-.btn.danger { background: #F9E6E6; color: #993333; }
 
 /* 입력창 */
 input, select, textarea { border: 1px solid var(--border-line); border-radius: 6px; padding: 6px 8px; font-size: 10.5px; background: white; color: var(--text-dark); }
@@ -182,7 +174,6 @@ tr:hover td { background: #FAF8F0; }
 
 /* 그리드 및 유틸 */
 .flex-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 
 .stat-card { background: white; border: 1px solid var(--border-line); border-radius: 8px; padding: 10px; text-align: center; }
@@ -265,17 +256,6 @@ canvas#deviationChart, canvas#warningChart { max-height: 280px; width: 100% !imp
 .zone-check-row select { flex: 1 1 140px; min-width: 0; }
 .zone-check-row .check-item { flex: 0 0 auto; display: flex; align-items: center; gap: 5px; padding: 0; margin: 0; font-size: 10.5px; white-space: nowrap; cursor: pointer; }
 
-#adminArea .form-row .checkbox-wrap {
-  display: inline-flex; align-items: center; gap: 6px; width: auto;
-  flex: 0 0 auto; white-space: nowrap; margin-left: auto;
-  font-size: 11px; font-weight: 600; text-align: left;
-}
-#adminArea .form-row .checkbox-wrap input[type="checkbox"] {
-  width: 15px; height: 15px; min-width: 0; padding: 0; margin: 0; flex: 0 0 15px;
-  border: 1px solid var(--green-border); border-radius: 3px; background: #fff;
-  accent-color: var(--green-main); cursor: pointer;
-}
-
 .search-row { align-items: flex-end; }
 .search-row > div { flex: 1 1 150px; min-width: 120px; }
 
@@ -330,43 +310,6 @@ canvas#deviationChart, canvas#warningChart { max-height: 280px; width: 100% !imp
 .sample-col { border-left: 2px dashed #999 !important; background: #fff !important; }
 #printTable .empty-box { text-align: center; padding: 20px !important; color: #666; font-size: 11px; background: #fff !important; }
 
-/* 관리자 설정 페이지 공통 */
-#adminArea .card .form-row { gap: 8px; align-items: center; margin: 6px 0; }
-#adminArea .card .form-row label { width: 90px; font-size: 12px; font-weight: bold; flex: none; min-width: auto; }
-#adminArea .card .form-row input, #adminArea .card .form-row select { flex: 1; min-width: 110px; padding: 5px 6px; font-size: 12px; width: auto; }
-#adminArea .card .form-row.short input { flex: 0 0 80px; }
-#adminArea .card .btn-area { margin-top: 12px; text-align: right; }
-#adminArea .card .btn-area button { padding: 6px 14px; margin-left: 6px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; }
-#adminArea .card .btn-primary { background: #2196f3; color: #fff; }
-#adminArea .card .btn-reset { background: #eee; color: #333; }
-.edit-link { color: #2196f3; cursor: pointer; font-size: 11px; font-weight: 600; text-decoration: underline; }
-.del-link { color: #c62828; cursor: pointer; font-size: 11px; margin-left: 6px; font-weight: 600; text-decoration: underline; }
-.btn-sm { padding: 3px 6px; font-size: 11px; margin-left: 4px; border: none; border-radius: 3px; cursor: pointer; }
-.access-denied { text-align: center; padding: 40px; color: #666; }
-.role-admin { color: #d32f2f; font-weight: bold; }
-.role-manager { color: #2f62d3; font-weight: 600; }
-.role-worker { color: #2e7d32; font-weight: 600; }
-.role-guest { color: #888; font-weight: 500; }
-
-/* 농장설정 */
-#adminArea .form-grid { display: grid; grid-template-columns: 70px 1fr 50px 1fr; gap: 6px 8px; align-items: center; width: 100%; box-sizing: border-box; }
-#adminArea .form-grid label { text-align: right; padding-right: 4px; font-size: 11px; margin: 0; white-space: nowrap; }
-#adminArea .form-grid input, #adminArea .form-grid select, #adminArea .form-grid textarea { padding: 5px 6px; border: 1px solid #ccc; border-radius: 3px; font-size: 11px; margin: 0; box-sizing: border-box; height: 28px; width: 100%; }
-#adminArea .form-grid .full { grid-column: 2 / -1; }
-#adminArea .form-grid textarea { height: 50px; resize: none; }
-#adminArea .form-btn-row { display: flex; gap: 10px; justify-content: center; padding: 12px 0 6px 0; grid-column: 1 / -1; flex-wrap: wrap; }
-#adminArea .form-btn-row button { padding: 6px 18px; font-size: 11px; border-radius: 4px; border: none; cursor: pointer; font-weight: 500; transition: all 0.15s ease; }
-#adminArea .form-btn-row button:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
-#adminArea .form-btn-row .btn-primary { background: linear-gradient(180deg, #42a5f5, #1976d2); color: #fff; border: 1px solid #1565c0; }
-#adminArea .form-btn-row .btn-secondary { background: linear-gradient(180deg, #f5f5f5, #e0e0e0); color: #333; border: 1px solid #bdbdbd; }
-#adminArea .readonly-bg { background: #f9f9f9; color: #666; }
-#adminArea .season-note { background: #e3f2fd; padding: 8px 10px; border-radius: 4px; font-size: 10px; color: #0d47a1; margin-bottom: 12px; line-height: 1.4; }
-#adminArea .saved-list { width: 100%; border-collapse: collapse; margin-top: 6px; }
-#adminArea .saved-list th, #adminArea .saved-list td { border: 1px solid #e0e0e0; padding: 6px 4px; font-size: 10px; text-align: center; }
-#adminArea .saved-list th { background: #f5f5f5; color: #333; }
-#adminArea .saved-list tr:hover { background: #fafafa; }
-#adminArea .empty-row { text-align: center; color: #999; padding: 10px 0; }
-
 /* AI설정 */
 #adminArea .note { color: #e65100; font-size: 10px; margin-left: 4px; }
 #adminArea .ai-form-grid { display: grid; grid-template-columns: 90px 1fr 70px 140px; gap: 5px 8px; align-items: center; width: 100%; box-sizing: border-box; }
@@ -389,93 +332,25 @@ canvas#deviationChart, canvas#warningChart { max-height: 280px; width: 100% !imp
 #adminArea .status-loading { color: #f57f17; }
 #adminArea .btn-del-ai { background: #ffebee; color: #c62828; }
 
-/* 포커스 접근성 */
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #2F5D3A; outline-offset: 2px; }
+/* 농장설정 */
+#adminArea .season-note { background: #e3f2fd; padding: 8px 10px; border-radius: 4px; font-size: 10px; color: #0d47a1; margin-bottom: 12px; line-height: 1.4; }
+#adminArea .saved-list { width: 100%; border-collapse: collapse; margin-top: 6px; }
+#adminArea .saved-list th, #adminArea .saved-list td { border: 1px solid #e0e0e0; padding: 6px 4px; font-size: 10px; text-align: center; }
+#adminArea .saved-list th { background: #f5f5f5; color: #333; }
+#adminArea .saved-list tr:hover { background: #fafafa; }
+#adminArea .empty-row { text-align: center; color: #999; padding: 10px 0; }
+
+/* 역할 배지 */
+.role-admin { color: #d32f2f; font-weight: bold; }
+.role-manager { color: #2f62d3; font-weight: 600; }
+.role-worker { color: #2e7d32; font-weight: 600; }
+.role-guest { color: #888; font-weight: 500; }
+.access-denied { text-align: center; padding: 40px; color: #666; }
 
 /* =====================================================
-   5. 반응형 (Media Queries 통합)
+   🎨 통합 디자인 시스템 (Standard Form & Buttons)
    ===================================================== */
-@media (max-width: 1024px) {
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 768px) {
-  /* 레이아웃 */
-  .app-layout { display: block; }
-  .sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 240px; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 950; }
-  .sidebar.open { transform: translateX(0); }
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 940; display: none; }
-  .overlay.show { display: block; }
-  .container { padding: 12px 10px 20px; }
-
-  /* 그리드 및 카드 */
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }
-  .grid-2 { grid-template-columns: 1fr; }
-  .status-box { flex-direction: column; align-items: flex-start; gap: 6px; }
-  .card { padding: 12px; margin-bottom: 14px; border-radius: 10px; }
-  .card .table-wrapper { margin-top: 8px; border: 1px solid #E0DBC8; border-radius: 8px; background: #fff; }
-  
-  /* 테이블 */
-  .table-wrapper th, .table-wrapper td { font-size: 10px; padding: 6px; }
-
-  /* 폼 (3열 최적화) */
-  .form-row { gap: 6px; margin-bottom: 8px; }
-  .form-row > div { min-width: 0; flex: 1 1 30%; }
-  .form-row label { font-size: 9.5px; }
-  .form-row input, .form-row select { width: 100%; min-width: 0; padding: 5px 4px; font-size: 10px; }
-  .form-row input[type="checkbox"] { width: 15px; height: 15px; flex: 0 0 auto; margin: 0; }
-  
-  /* 검색 및 기타 */
-  .search-row > div { flex: 1 1 45%; min-width: 0; }
-  .zone-check-row { gap: 4px; }
-  .zone-check-row .check-item { font-size: 9.5px; padding: 0; }
-  .daily-input-box .form-row input { font-size: 12px; padding: 8px 6px; }
-}
-
-@media (max-width: 480px) {
-  .grid-4 { grid-template-columns: 1fr; }
-  .search-area { gap: 4px; }
-  .date-row { flex-wrap: wrap; }
-  .info-row { gap: 8px; }
-  .modal-body { padding: 10px; }
-  .past-table th:nth-child(3), .past-table td:nth-child(3) { display: none; }
-  
-  /* 설정 페이지 그리드 */
-  #adminArea .form-grid { grid-template-columns: 70px 1fr; }
-  #adminArea .ai-form-grid { grid-template-columns: 90px 1fr; }
-  #adminArea .ai-form-grid label { text-align: left; padding-right: 0; }
-  
-  /* 설정 페이지 폼 */
-  #adminArea .card .form-row { gap: 4px; }
-  #adminArea .card .form-row label { width: 100%; text-align: left; }
-  #adminArea .card .form-row.short input { flex: 1; min-width: 0; }
-  #adminArea .card .form-row > div { min-width: 100%; }
-}
-
-/* =====================================================
-   6. 인쇄 전용 (Print Media)
-   ===================================================== */
-@page { size: A4 landscape; margin: 8mm; }
-
-@media print {
-  * { -webkit-print-color-adjust: economy; print-color-adjust: economy; }
-  body * { visibility: hidden; }
-  
-  .table-container, .table-container * { visibility: visible; }
-  .table-container { position: absolute; left: 0; top: 0; width: 100%; background: #fff; overflow: visible; }
-  
-  #printTable { width: 100%; background: #fff; }
-  #printTable th, #printTable td { background: #fff; color: #000; border: 1px solid #000; }
-  .zone-name { background: #fff; color: #000; border: 1px solid #000; }
-  .sample-col { background: #fff; }
-  
-  .sidebar, .top-header, .page-top-bar, .card1, .overlay, button { display: none !important; }
-}
-
-/* =====================================================
-   🎨 통합 디자인 시스템 (농장설정 기준)
-   ===================================================== */
-/* 1) 표준 폼 그리드 — 한 줄에 2쌍 */
+/* 1) 표준 폼 그리드 */
 .form-grid, #adminArea .form-grid {
   display: grid;
   grid-template-columns: 80px 1fr 80px 1fr;
@@ -575,19 +450,102 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .edit-link { background: linear-gradient(180deg, #42a5f5, #1976d2); color: #fff; border: 1px solid #1565c0; }
 .del-link { background: linear-gradient(180deg, #ffcdd2, #ef9a9a); color: #b71c1c; border: 1px solid #e57373; }
 
-/* 5) 반응형 */
+/* 5) Readonly 및 기타 */
+.readonly-bg { background: #f9f9f9; color: #666; }
+
+/* =====================================================
+   5. 반응형 (Media Queries 통합)
+   ===================================================== */
+@media (max-width: 1024px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 768px) {
+  /* 레이아웃 */
+  .app-layout { display: block; }
+  .sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 240px; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 950; }
+  .sidebar.open { transform: translateX(0); }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 940; display: none; }
+  .overlay.show { display: block; }
+  .container { padding: 12px 10px 20px; }
+
+  /* 그리드 및 카드 */
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: 1fr; }
+  .status-box { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .card { padding: 12px; margin-bottom: 14px; border-radius: 10px; }
+  .card .table-wrapper { margin-top: 8px; border: 1px solid #E0DBC8; border-radius: 8px; background: #fff; }
+  
+  /* 테이블 */
+  .table-wrapper th, .table-wrapper td { font-size: 10px; padding: 6px; }
+
+  /* 폼 (3열 최적화) */
+  .form-row { gap: 6px; margin-bottom: 8px; }
+  .form-row > div { min-width: 0; flex: 1 1 30%; }
+  .form-row label { font-size: 9.5px; }
+  .form-row input, .form-row select { width: 100%; min-width: 0; padding: 5px 4px; font-size: 10px; }
+  .form-row input[type="checkbox"] { width: 15px; height: 15px; flex: 0 0 auto; margin: 0; }
+  
+  /* 설정 페이지 그리드 */
   .form-grid, #adminArea .form-grid { grid-template-columns: 70px 1fr 70px 1fr; gap: 6px; }
   .form-grid label, #adminArea .form-grid label { font-size: 10px; }
+  #adminArea .ai-form-grid { grid-template-columns: 90px 1fr; }
+  #adminArea .ai-form-grid label { text-align: left; padding-right: 0; }
+  
+  /* 검색 및 기타 */
+  .search-row > div { flex: 1 1 45%; min-width: 0; }
+  .zone-check-row { gap: 4px; }
+  .zone-check-row .check-item { font-size: 9.5px; padding: 0; }
+  .daily-input-box .form-row input { font-size: 12px; padding: 8px 6px; }
 }
+
 @media (max-width: 480px) {
+  .grid-4 { grid-template-columns: 1fr; }
+  .search-area { gap: 4px; }
+  .date-row { flex-wrap: wrap; }
+  .info-row { gap: 8px; }
+  .modal-body { padding: 10px; }
+  .past-table th:nth-child(3), .past-table td:nth-child(3) { display: none; }
+  
+  /* 설정 페이지 그리드 */
   .form-grid, #adminArea .form-grid { grid-template-columns: 75px 1fr; }
   .form-grid .full, #adminArea .form-grid .full { grid-column: 2 / -1; }
+  
+  /* 설정 페이지 폼 */
+  #adminArea .card .form-row { gap: 4px; }
+  #adminArea .card .form-row label { width: 100%; text-align: left; }
+  #adminArea .card .form-row.short input { flex: 1; min-width: 0; }
+  #adminArea .card .form-row > div { min-width: 100%; }
 }
 
 /* =====================================================
-   ✅ UI 영역 텍스트 선택 방지 (실수 드래그 감소)
+   6. 인쇄 전용 (Print Media)
    ===================================================== */
+@page { size: A4 landscape; margin: 8mm; }
+
+@media print {
+  * { -webkit-print-color-adjust: economy; print-color-adjust: economy; }
+  body * { visibility: hidden; }
+  
+  .table-container, .table-container * { visibility: visible; }
+  .table-container { position: absolute; left: 0; top: 0; width: 100%; background: #fff; overflow: visible; }
+  
+  #printTable { width: 100%; background: #fff; }
+  #printTable th, #printTable td { background: #fff; color: #000; border: 1px solid #000; }
+  .zone-name { background: #fff; color: #000; border: 1px solid #000; }
+  .sample-col { background: #fff; }
+  
+  .sidebar, .top-header, .page-top-bar, .card1, .overlay, button { display: none !important; }
+}
+
+/* =====================================================
+   7. 유틸리티 (선택 방지 등)
+   ===================================================== */
+/* UI 영역 텍스트 선택 방지 (실수 드래그 감소) */
 .sidebar,
 .top-header,
 .sidebar-menu a,
@@ -613,18 +571,14 @@ td {
   -webkit-user-select: text;
 }
 
-/* =====================================================
-   ✅ 배액기록 — 샘플 입력행 간격 확보
-   ===================================================== */
+/* 배액기록 — 샘플 입력행 간격 확보 */
 #sampleRowWrap {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px dashed var(--border-line);
 }
 
-/* =====================================================
-   ✅ 대시보드 — 4열 통계 그리드 (최근 7일 배액율 등)
-   ===================================================== */
+/* 대시보드 — 4열 통계 그리드 */
 .grid-4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -635,9 +589,6 @@ td {
   margin: 0;
   width: 100%;
 }
-@media (max-width: 900px) {
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 480px) {
-  .grid-4 { grid-template-columns: 1fr; }
-}
+
+/* 포커스 접근성 */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #2F5D3A; outline-offset: 2px; }
