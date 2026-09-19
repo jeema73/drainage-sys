@@ -612,3 +612,32 @@ td {
   user-select: text;
   -webkit-user-select: text;
 }
+
+/* =====================================================
+   ✅ 배액기록 — 샘플 입력행 간격 확보
+   ===================================================== */
+#sampleRowWrap {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-line);
+}
+
+/* =====================================================
+   ✅ 대시보드 — 4열 통계 그리드 (최근 7일 배액율 등)
+   ===================================================== */
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+.grid-4 .stat-card {
+  margin: 0;
+  width: 100%;
+}
+@media (max-width: 900px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .grid-4 { grid-template-columns: 1fr; }
+}

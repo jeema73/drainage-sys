@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  console.log("✅ drain-record.js 로드됨 (v260918)");
+  console.log("✅ drain-record.js 로드됨 (v260920)");
 
   let db = null;
   let fsMod = null;
@@ -11,6 +11,7 @@
   let standards = [];
   let supplySettings = [];
   let lastRecords = [];
+  let lastEventsByLine = {}; // ✅ 라인별 최근 공급횟수 (프리필용)
 
   const ROLE_ADMIN = "admin";
   const ROLE_MANAGER = "manager";
@@ -141,7 +142,6 @@
     const userName = user.userName || user.userId || "사용자";
     const userNameEl = document.getElementById("sidebarUserName");
     if (userNameEl) userNameEl.textContent = `${userName} ${getRoleName(userRole)}`;
-
     applyMenuPermissions(userRole);
 
     const adminArea = document.getElementById("adminArea");
@@ -150,6 +150,7 @@
   }
 
   // ✅ 상태 판정 (EC/pH + 배액율)
+  // 배액율 = 배액량(L) ÷ (당일 횟수 × 1회 시간 × 끝 배지 유량 ÷ 60) × 100
   function checkStatus(r) {
     const recLine = r.line || r.lineNo || "V01";
     const std = standards.filter(s => {
@@ -185,20 +186,25 @@
     if (ecLevel === "danger" || phLevel === "danger") level = "danger";
     else if (ecLevel === "warn" || phLevel === "warn") level = "warn";
 
-    // ✅ 배액율 = 배액량(mL→L) ÷ 24h 급액량(L·포대당) × 100 (최신 급액셋팅 매칭)
+    // ✅ 배액율: 기록의 supplyEvents(실적) × 급액셋팅(기준)
     let ratio = null, ratioLevel = "none";
     const targetRate = parseFloat(std.drainRate) || null;
     const drainMl = parseFloat(r.drainAmount);
+    const events = parseFloat(r.supplyEvents);
     const ss = supplySettings.filter(s => {
       const ssLine = s.lineNo || s.line || "V01";
       return ssLine === recLine && s.settingDate <= r.measureDate;
-    }).sort((a, b) => b.settingDate.localeCompare(a.settingDate))[0];
+    }).sort((a, b) => b.settingDate.localeCompare(a.standardDate || a.settingDate))[0];
 
-    if (ss && parseFloat(ss.dailySupplyL) > 0 && !isNaN(drainMl) && drainMl > 0) {
-      ratio = (drainMl / 1000) / parseFloat(ss.dailySupplyL) * 100;
-      if (targetRate) {
-        const ad = Math.abs(ratio - targetRate);
-        ratioLevel = ad <= 10 ? "ok" : ad <= 20 ? "warn" : "danger";
+    if (ss && events > 0 && !isNaN(drainMl) && drainMl > 0) {
+      const perEventL = (parseFloat(ss.minutesPerEvent) / 60) * parseFloat(ss.flowRatePerBag);
+      const dailyL = perEventL * events;
+      if (dailyL > 0) {
+        ratio = (drainMl / 1000) / dailyL * 100;
+        if (targetRate) {
+          const ad = Math.abs(ratio - targetRate);
+          ratioLevel = ad <= 10 ? "ok" : ad <= 20 ? "warn" : "danger";
+        }
       }
     }
     const ratioColor = ratioLevel === "ok" ? "#2e7d32" : ratioLevel === "warn" ? "#ef6c00" : ratioLevel === "danger" ? "#c62828" : "#999";
@@ -233,38 +239,54 @@
     return ax.localeCompare(bx, "ko");
   }
 
-    // ✅ 구역 자연순 정렬: 1,2,3...10,11 → 육1,육2 (육묘는 뒤)
   function zoneNameCompare(aName, bName) {
     const a = String(aName || "");
     const b = String(bName || "");
     const aNursery = a.includes("육") ? 1 : 0;
     const bNursery = b.includes("육") ? 1 : 0;
     if (aNursery !== bNursery) return aNursery - bNursery;
-
     const aNum = a.match(/(\d+)/) ? parseInt(a.match(/(\d+)/)[1], 10) : 999;
     const bNum = b.match(/(\d+)/) ? parseInt(b.match(/(\d+)/)[1], 10) : 999;
     if (aNum !== bNum) return aNum - bNum;
-
     return a.localeCompare(b, "ko");
   }
 
-  // ✅ 구역 선택 → 샘플 입력칸 자동 표시/숨김
+  // ✅ 라인별 최근 공급횟수 프리필 맵 구축
+  function buildPrefillMap(records) {
+    const sorted = [...records].sort((a, b) => String(b.measureDate || "").localeCompare(String(a.measureDate || "")));
+    lastEventsByLine = {};
+    sorted.forEach(r => {
+      const line = r.line || "V01";
+      if (lastEventsByLine[line] === undefined && r.supplyEvents != null && r.supplyEvents !== "") {
+        lastEventsByLine[line] = r.supplyEvents;
+      }
+    });
+  }
+
+  // ✅ 구역 선택 → 샘플 입력칸 자동 표시/숨김 + 횟수 프리필
   function onZoneChange() {
     const sel = document.getElementById("zoneSel");
     const opt = sel ? sel.selectedOptions[0] : null;
     const wrap = document.getElementById("sampleRowWrap");
     const use = !!(opt && opt.value && opt.dataset.sample === "true");
+    const line = opt ? (opt.dataset.line || "V01") : "V01";
 
     if (wrap) wrap.style.display = use ? "block" : "none";
     if (!use) {
-      ["sampleEc", "samplePh", "drainAmount"].forEach(id => {
+      ["sampleEc", "samplePh", "drainAmount", "supplyEvents"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = "";
       });
+    } else {
+      // ✅ 신규 등록 시에만 해당 라인 최근 횟수 프리필
+      const editId = document.getElementById("editId").value;
+      const evEl = document.getElementById("supplyEvents");
+      if (!editId && evEl && lastEventsByLine[line] !== undefined) {
+        evEl.value = lastEventsByLine[line];
+      }
     }
   }
 
-  // ✅ 조회 (날짜/구역/승인상태 변경 시 자동)
   async function loadRecords() {
     const database = await ensureDb();
     if (!database) return;
@@ -279,13 +301,14 @@
       const snap = await getDocs(collection(database, "drain_records"));
       let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
+      buildPrefillMap(list); // ✅ 프리필 맵 갱신
+
       if (s) list = list.filter(r => r.measureDate >= s);
       if (e) list = list.filter(r => r.measureDate <= e);
       if (z) list = list.filter(r => r.zoneName === z);
       if (ap === "true") list = list.filter(r => r.approved === true);
       else if (ap === "false") list = list.filter(r => r.approved !== true);
 
-      // ✅ 최신순 정렬 (날짜 ↓ → 구역 자연순 ↑ → 시간 ↓)
       list.sort((a, b) => {
         const dCmp = String(b.measureDate || "").localeCompare(String(a.measureDate || ""));
         if (dCmp !== 0) return dCmp;
@@ -325,7 +348,7 @@
       const zoneLine = `${r.zoneName || "-"} · ${r.line || "V01"}`;
       const ratioCell = st.ratio == null
         ? `<span style="color:#999;">-</span>`
-        : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
+        : `<span style="color:${st.ratioColor};font-weight:bold;" title="공급 ${r.supplyEvents || "-"}회 기준">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
 
       return `<tr ${rowClass}>
         <td>${r.measureDate || "-"}</td>
@@ -351,7 +374,6 @@
     }).join("");
   }
 
-  // ✅ 저장 (등록/수정)
   async function saveRecord() {
     if (!canEdit()) return alert("등록/수정 권한이 없습니다.");
 
@@ -369,6 +391,9 @@
     if (!drainEc || !drainPh) return alert("배액 EC와 pH를 입력하세요!");
 
     const sampleOn = document.getElementById("sampleRowWrap").style.display !== "none";
+    const supplyEventsVal = document.getElementById("supplyEvents").value;
+    if (sampleOn && !supplyEventsVal) return alert("당일 공급횟수를 입력하세요!\n(양액기 로그의 총 급수횟수)");
+
     const editId = document.getElementById("editId").value;
 
     const data = {
@@ -382,6 +407,7 @@
       sampleEc: sampleOn && document.getElementById("sampleEc").value ? parseFloat(document.getElementById("sampleEc").value) : null,
       samplePh: sampleOn && document.getElementById("samplePh").value ? parseFloat(document.getElementById("samplePh").value) : null,
       drainAmount: sampleOn && document.getElementById("drainAmount").value ? parseFloat(document.getElementById("drainAmount").value) : null,
+      supplyEvents: sampleOn && supplyEventsVal ? parseInt(supplyEventsVal) : null,
       updatedAt: new Date().toISOString()
     };
 
@@ -406,7 +432,6 @@
     }
   }
 
-  // ✅ 수정 → 폼에 채우기
   function editRec(id) {
     if (!canEdit()) return alert("수정 권한이 없습니다.");
     const r = lastRecords.find(x => x.id === id);
@@ -426,13 +451,13 @@
     document.getElementById("sampleEc").value = r.sampleEc ?? "";
     document.getElementById("samplePh").value = r.samplePh ?? "";
     document.getElementById("drainAmount").value = r.drainAmount ?? "";
+    document.getElementById("supplyEvents").value = r.supplyEvents ?? "";
 
     const ft = document.getElementById("formTitle");
     if (ft) ft.textContent = "✏️ 배액 기록 수정";
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // ✅ 승인/승인취소
   async function toggleApprove(id, current) {
     if (!canApprove()) return alert("승인 권한이 없습니다.");
     const database = await ensureDb();
@@ -446,11 +471,10 @@
       alert(!current ? "✅ 승인되었습니다!" : "승인이 취소되었습니다.");
       await loadRecords();
     } catch (e) {
-      alert("❌ 처리 실패: " + e.message);
+      alert("❌ 처리 실: " + e.message);
     }
   }
 
-  // ✅ 삭제
   async function deleteRec(id) {
     if (!canApprove()) return alert("삭제 권한이 없습니다.");
     if (!confirm("정말 삭제하시겠습니까?")) return;
@@ -466,7 +490,6 @@
     }
   }
 
-  // ✅ 폼 초기화
   function resetForm() {
     document.getElementById("editId").value = "";
     document.getElementById("measureDate").valueAsDate = new Date();
@@ -474,7 +497,7 @@
     const zoneSel = document.getElementById("zoneSel");
     if (zoneSel) zoneSel.value = "";
     onZoneChange();
-    ["drainEc", "drainPh", "bedTemp", "sampleEc", "samplePh", "drainAmount"].forEach(id => {
+    ["drainEc", "drainPh", "bedTemp", "sampleEc", "samplePh", "drainAmount", "supplyEvents"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = "";
     });
@@ -498,17 +521,14 @@
       }
     });
 
-    // ✅ 조회 조건 변경 시 자동 조회
     ["sDate", "eDate", "zFilter", "approvedFilter"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener("change", loadRecords);
     });
 
-    // ✅ 구역 선택 → 샘플칸 자동
     const zoneSel = document.getElementById("zoneSel");
     if (zoneSel) zoneSel.addEventListener("change", onZoneChange);
 
-    // ✅ 저장/초기화 버튼
     const saveBtn = document.getElementById("saveBtn");
     const resetBtn = document.getElementById("resetBtn");
     if (saveBtn) saveBtn.addEventListener("click", saveRecord);
@@ -523,7 +543,6 @@
     await loadFarmInfo();
     loadWeather();
 
-    // ✅ 기본 기간: 어제 ~ 오늘
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
@@ -549,7 +568,6 @@
       console.log("기준데이터 불러오기 오류:", e);
     }
 
-    // ✅ 구역 셀렉트 + 조회 필터 옵션 구성
     const sel = document.getElementById("zoneSel");
     const fil = document.getElementById("zFilter");
     if (sel && !sel.querySelector('option[value=""]')) {
@@ -564,14 +582,12 @@
     if (sel) sel.value = "";
     onZoneChange();
 
-    // ✅ 등록폼 기본값
     document.getElementById("measureDate").valueAsDate = new Date();
     document.getElementById("measureTime").value = new Date().toTimeString().slice(0, 5);
 
     await loadRecords();
   }
 
-  // HTML onclick에서 호출 가능하도록 전역 노출
   window.editRec = editRec;
   window.deleteRec = deleteRec;
   window.toggleApprove = toggleApprove;

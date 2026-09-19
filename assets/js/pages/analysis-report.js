@@ -138,13 +138,20 @@
       return ssLine === recLine && s.settingDate <= r.measureDate;
     }).sort((a, b) => b.settingDate.localeCompare(a.settingDate))[0];
 
-    if (ss && parseFloat(ss.dailySupplyL) > 0 && !isNaN(drainMl) && drainMl > 0) {
-      ratio = (drainMl / 1000) / parseFloat(ss.dailySupplyL) * 100;
-      if (targetRate) {
-        const ad = Math.abs(ratio - targetRate);
-        ratioLevel = ad <= 10 ? "ok" : ad <= 20 ? "warn" : "danger";
+    const events = parseFloat(r.supplyEvents);
+    if (ss && events > 0 && !isNaN(drainMl) && drainMl > 0) {
+      const perEventL = (parseFloat(ss.minutesPerEvent) / 60) * parseFloat(ss.flowRatePerBag);
+      const dailyL = perEventL * events;
+      if (dailyL > 0) {
+        ratio = (drainMl / 1000) / dailyL * 100;
+
+        if (targetRate) {
+          const ad = Math.abs(ratio - targetRate);
+          ratioLevel = ad <= 10 ? "ok" : ad <= 20 ? "warn" : "danger";
+        }
       }
     }
+
     const ratioColor = ratioLevel === "ok" ? "#2e7d32" : ratioLevel === "warn" ? "#ef6c00" : ratioLevel === "danger" ? "#c62828" : "#999";
 
     return {

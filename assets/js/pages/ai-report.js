@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  console.log("✅ ai-report.js 로드됨 (v260919)");
+  console.log("✅ ai-report.js 로드됨 (v260920)");
 
   let db = null;
   let fsMod = null;
@@ -12,7 +12,7 @@
 
   let userRole = "";
   let standards = [];
-  let supplySettings = [];  // ✅ 배액율 계산용
+  let supplySettings = [];
   let aiList = [];
   let zoneList = [];
   let allRecords = [];
@@ -104,7 +104,7 @@
     }
   }
 
-  // ✅ 상태 판정 (EC/pH + 배액율)
+  // ✅ 상태 판정 (EC/pH + 배액율) — 변수 선언 자체 완결형
   function checkStatus(r) {
     const recLine = r.line || r.lineNo || "V01";
     const std = standards.filter(s => {
@@ -113,7 +113,7 @@
     }).sort((a, b) => b.standardDate.localeCompare(a.standardDate))[0];
 
     if (!std) {
-      return { level: "none", ecDev: "-", phDev: "-", supEc: "-", supPh: "-", statusText: "기준없음", statusColor: "#888", ratio: null, targetRate: null };
+      return { level: "none", ecDev: "-", phDev: "-", supEc: "-", supPh: "-", statusText: "기준없음", statusColor: "#888", ratio: null, ratioColor: "#999", targetRate: null };
     }
 
     const rawEc = (std.targetEc !== undefined && std.targetEc !== null && std.targetEc !== "") ? std.targetEc : std.supplyEc;
@@ -140,17 +140,29 @@
     if (ecLevel === "danger" || phLevel === "danger") level = "danger";
     else if (ecLevel === "warn" || phLevel === "warn") level = "warn";
 
-    // ✅ 배액율 = 배액량(mL→L) ÷ 24h 급액량(L·포대당) × 100
+    // ✅ 배액율 = 배액량(L) ÷ (기록의 횟수 × 기준 1회 급액량) × 100
     let ratio = null;
+    let ratioLevel = "none";
     const targetRate = parseFloat(std.drainRate) || null;
     const drainMl = parseFloat(r.drainAmount);
+    const events = parseFloat(r.supplyEvents);
     const ss = supplySettings.filter(s => {
       const ssLine = s.lineNo || s.line || "V01";
       return ssLine === recLine && s.settingDate <= r.measureDate;
     }).sort((a, b) => b.settingDate.localeCompare(a.settingDate))[0];
-    if (ss && parseFloat(ss.dailySupplyL) > 0 && !isNaN(drainMl) && drainMl > 0) {
-      ratio = Math.round(((drainMl / 1000) / parseFloat(ss.dailySupplyL) * 100) * 10) / 10;
+
+    if (ss && events > 0 && !isNaN(drainMl) && drainMl > 0) {
+      const perEventL = (parseFloat(ss.minutesPerEvent) / 60) * parseFloat(ss.flowRatePerBag);
+      const dailyL = perEventL * events;
+      if (dailyL > 0) {
+        ratio = (drainMl / 1000) / dailyL * 100;
+        if (targetRate) {
+          const ad = Math.abs(ratio - targetRate);
+          ratioLevel = ad <= 10 ? "ok" : ad <= 20 ? "warn" : "danger";
+        }
+      }
     }
+    const ratioColor = ratioLevel === "ok" ? "#2e7d32" : ratioLevel === "warn" ? "#ef6c00" : ratioLevel === "danger" ? "#c62828" : "#999";
 
     return {
       level, ecDev, phDev,
@@ -158,7 +170,8 @@
       supPh: rawPh !== undefined && rawPh !== null && rawPh !== "" ? rawPh : "-",
       statusText: level === "danger" ? "🚨 경고" : level === "warn" ? "⚠️ 주의" : "✅ 정상",
       statusColor: level === "danger" ? "#c62828" : level === "warn" ? "#ef6c00" : "#2e7d32",
-      ratio, targetRate
+      ratio: ratio === null ? null : Math.round(ratio * 10) / 10,
+      ratioColor, targetRate
     };
   }
 
@@ -175,7 +188,6 @@
     const userName = user.userName || user.userId || "사용자";
     const userNameEl = document.getElementById("sidebarUserName");
     if (userNameEl) userNameEl.textContent = `${userName} ${getRoleName(userRole)}`;
-
     applyMenuPermissions(userRole);
 
     const adminArea = document.getElementById("adminArea");
@@ -342,7 +354,7 @@
     `).join("");
   }
 
-  // ✅ 503/429(서버 혼잡) 자동 재시도 — 최대 2회, 점점 길게 대기
+  // ✅ 503/429 서버 혼잡 자동 재시도
   async function fetchWithRetry(url, options, retries = 2, delayMs = 2500) {
     let res;
     for (let i = 0; i <= retries; i++) {
@@ -379,7 +391,7 @@
       else ok++;
     });
 
-    // ✅ 배액율 통계 계산
+    // ✅ 배액율 통계
     let ratioOk = 0, ratioWarn = 0, ratioDanger = 0, ratioNone = 0;
     records.forEach(r => {
       const st = checkStatus(r);
@@ -392,12 +404,12 @@
     });
 
     const dataSummary = `
-【강북구 스마트팜 딸기 배액관리】
+【강북구 스마트팜 재배단지 딸기 배액관리】
 ▸ 분석기간: ${sDate} ~ ${eDate}
 ▸ 전체 ${records.length}건 / EC·pH 기준: 정상 ${ok}건 / 주의 ${warn}건 / 경고 ${danger}건
 ▸ 배액율 현황 (목표 대비): 정상(±10%p) ${ratioOk}건 / 주의(±20%p) ${ratioWarn}건 / 경고(초과) ${ratioDanger}건 / 미계산 ${ratioNone}건
 ▸ 판정기준: EC편차=실제EC-(기준EC+0.2) / pH편차=실제pH-기준pH, pH 6.8↑ 또는 5.2↓는 경고
-▸ 배액율: 배액량÷24h급액량×100 (목표 배액율 대비 ±10%p 정상 / ±20%p 주의 / 초과 경고)
+▸ 배액율: 배액량÷(급액횟수×1회급액량)×100 (목표 배액율 대비 ±10%p 정상 / ±20%p 주의 / 초과 경고)
 ▸ 구역정보: ${zoneList.map(z => `- ${z.zoneName} / ${z.liquidLine || z.line || "V01"} / 샘플:${z.hasSampleData ? "예" : "아니오"}`).join("\n")}
 ▸ 측정기록 (최신순, 최대30건): ${records.sort((a, b) => b.measureDate.localeCompare(a.measureDate)).slice(0, 30).map(r => {
       const st = checkStatus(r);
@@ -434,7 +446,6 @@
         const fullPrompt = `${prompt}\n\n${dataSummary}`;
         let text = "";
 
-        // 1️⃣ Gemini 전용 주소만 Gemini 방식
         if (endpoint.includes("generativelanguage.googleapis.com")) {
           let url = endpoint.endsWith("/") ? endpoint : endpoint + "/";
           url += `${model}:generateContent?key=${apiKey}`;
@@ -452,7 +463,6 @@
                || json?.error?.message
                || "응답을 받아오지 못했습니다.";
         }
-        // 2️⃣ 그 외 모든 AI(OpenAI, Qwen, 기타) = OpenAI 호환 방식
         else {
           let url = endpoint.endsWith("/") ? endpoint : endpoint + "/";
           url += "chat/completions";
@@ -495,7 +505,7 @@
         const msg = isCors
           ? "CORS/네트워크 오류! API 서버가 브라우저 직접 호출을 거부했습니다."
           : isBusy
-            ? "서버 혼잡(503/429)! 자동 재시도에도 실패했어요. 잠시 후 다시 누르거나, AI설정에서 모델을 gemini-2.5-flash로 바꿔보세요."
+            ? "서버 혼잡(503/429)! 자동 재시도에도 실패했어요. 잠시 후 다시 누르세요."
             : e.message;
         document.querySelector(`#${cardId} .result-body`).textContent = "❌ 오류: " + msg;
         document.querySelector(`#${cardId} h4 span`).textContent = "실패";
@@ -602,7 +612,7 @@
         }
       }
 
-      // ✅ 분석 실행 버튼 자동 연결
+      // ✅ 분석 실행 버튼 자동 연결 (인라인 onclick 없어도 동작)
       document.querySelectorAll("#aiSelectArea button").forEach(btn => {
         if (btn.dataset.aiBound) return;
         btn.dataset.aiBound = "1";
@@ -653,7 +663,6 @@
     const { collection, getDocs } = await getFs();
 
     try {
-      // ✅ supply_settings도 함께 로드
       const [stdSnap, zoneSnap, recSnap, ssSnap] = await Promise.all([
         getDocs(collection(database, "supply_standards")),
         getDocs(collection(database, "zones")),

@@ -308,3 +308,31 @@
     init();
   }
 })();
+
+// ✅ 최고관리자 옵션 제어: admin만 부여 가능 + 자기 자신 삭제 방지
+(() => {
+  function applyAdminRestriction() {
+    const myRole = (localStorage.getItem("userRole") || "").trim();
+    const sel = document.getElementById("userRole");
+    if (!sel) return;
+    let opt = sel.querySelector('option[value="admin"]');
+    if (!opt) {
+      opt = document.createElement("option");
+      opt.value = "admin";
+      opt.textContent = "최고관리자";
+      sel.prepend(opt);
+    }
+    if (myRole !== "admin") {
+      opt.disabled = true;
+      opt.textContent = "최고관리자 (최고관리자만 부여 가능)";
+    } else {
+      opt.disabled = false;
+      opt.textContent = "최고관리자";
+    }
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", applyAdminRestriction);
+  } else {
+    applyAdminRestriction();
+  }
+})();

@@ -137,7 +137,7 @@
               </table>
             </div>
           </div>
-                    <!-- ✅ 급액 셋팅 등록 -->
+          <!-- ✅ 급액 셋팅 등록 (순수 기준만: 시간·유량) -->
           <div class="card daily-input-box">
             <h3 id="ssFormTitle">💧 급액 셋팅 등록 (라인별·일자별)</h3>
             <input type="hidden" id="ssEditId">
@@ -151,15 +151,13 @@
               </select>
               <label>급액방법 *</label>
               <select id="ssMethod">
-                <option value="시간간격">시간간격</option>
                 <option value="적산일사">적산일사</option>
+                <option value="시간간격">시간간격</option>
                 <option value="입력시간">입력시간</option>
               </select>
-              <label>급액횟수(회/일) *</label><input type="number" step="1" id="ssEvents" placeholder="예: 5">
-              <label>공급시간(분) *</label><input type="number" step="0.5" id="ssMinutes" placeholder="예: 3.5 (=03:30)">
-              <label>시간당 급액(L/h·포대) *</label><input type="number" step="0.01" id="ssFlow" placeholder="예: 10">
+              <label>공급시간(분/회) *</label><input type="number" step="0.5" id="ssMinutes" placeholder="예: 3">
+              <label>끝 배지 유량(L/h) *</label><input type="number" step="0.01" id="ssFlow" placeholder="예: 9.6">
               <label>[자동] 1회 급액량</label><input type="text" id="ssPerEvent" class="readonly-bg" readonly tabindex="-1">
-              <label>[자동] 24시간 급액량</label><input type="text" id="ssDaily" class="readonly-bg" readonly tabindex="-1">
             </div>
             <div class="form-btn-row">
               <button class="btn-primary" onclick="saveSupplySetting()">💾 저장</button>
@@ -175,18 +173,12 @@
               <table>
                 <thead>
                   <tr>
-                    <th>적용일자</th>
-                    <th>라인</th>
-                    <th>방법</th>
-                    <th>공급시간</th>
-                    <th>시간당 급액</th>
-                    <th>횟수</th>
-                    <th>24h 급액량</th>
-                    <th>관리</th>
+                    <th>적용일자</th><th>라인</th><th>방법</th>
+                    <th>공급시간</th><th>끝 배지 유량</th><th>1회 급액량</th><th>관리</th>
                   </tr>
                 </thead>
                 <tbody id="ssListBody">
-                  <tr><td colspan="8" class="empty-box">불러오는 중...</td></tr>
+                  <tr><td colspan="7" class="empty-box">불러오는 중...</td></tr>
                 </tbody>
               </table>
             </div>

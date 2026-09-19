@@ -227,18 +227,11 @@
     <div class="error-msg" id="errMsg"></div>
     <div class="loading" id="loadingMsg">✅ 로그인 성공! 잠시만 기다려주세요...</div>
     <div class="info-note">
-      💡 토큰.. 토큰.. 주세요 ㅠㅠ😭😵‍💫😵
+      💡 모든 계정은 데이터베이스에서 관리됩니다.
     </div>
   </div>
 
 <script>
-  const DEFAULT_ADMIN = {
-    userId: "admin",
-    userPw: "admin1234",
-    userName: "최고관리자",
-    userRole: "admin"
-  };
-
   // ✅ 아이디 저장 — 불러오기
   function loadSavedId() {
     const savedId = localStorage.getItem("savedLoginId");
@@ -320,21 +313,24 @@
       const db = getFirestore(app);
       let found = null;
 
-      // ✅ 최고관리자
-      if (id === DEFAULT_ADMIN.userId && pw === DEFAULT_ADMIN.userPw) {
-        found = DEFAULT_ADMIN;
-      } 
-      // ✅ DB 계정
-      else {
-        const q = query(collection(db, "accounts"), where("userId", "==", id));
-        const snap = await getDocs(q);
-        snap.forEach(doc => {
-          const d = doc.data();
-          if (d.userPw === pw) {
-            found = { ...d, id: doc.id };
-          }
-        });
+      // ✅ 모든 계정을 DB에서 조회 (admin 포함)
+      const q = query(collection(db, "accounts"), where("userId", "==", id));
+      const snap = await getDocs(q);
+      
+      if (snap.empty) {
+        errBox.textContent = "등록되지 않은 아이디입니다.";
+        errBox.style.display = "block";
+        loginBtn.disabled = false;
+        loginBtn.textContent = "🔐 로그인";
+        return;
       }
+
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.userPw === pw) {
+          found = { ...d, id: doc.id };
+        }
+      });
 
       if (found) {
         console.log("✅ 로그인 성공:", found.userId, "/", found.userRole);
@@ -355,7 +351,7 @@
         }, 800);
         return;
       } else {
-        errBox.textContent = "아이디 또는 비밀번호가 일치하지 않습니다.";
+        errBox.textContent = "비밀번호가 일치하지 않습니다.";
         errBox.style.display = "block";
       }
     } catch (e) {

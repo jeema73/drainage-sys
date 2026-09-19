@@ -1,5 +1,6 @@
 (() => {
   "use strict";
+  console.log("✅ supply-standard.js 로드됨 (v260920)");
 
   let db = null;
   let fsMod = null;
@@ -117,16 +118,14 @@
   }
 
   // =====================================================
-  // ✅ 급액 셋팅 (supply_settings) — 페이지 자동계산 + 최소 저장
+  // ✅ 급액 셋팅 = 순수 "기준"만 (공급시간 · 끝 배지 유량)
+  //    횟수(실적)는 배액기록에서 입력합니다.
   // =====================================================
   function updateSupplyCalc() {
     const minutes = parseFloat(document.getElementById("ssMinutes").value) || 0;
     const flow = parseFloat(document.getElementById("ssFlow").value) || 0;
-    const events = parseFloat(document.getElementById("ssEvents").value) || 0;
     const perEvent = (minutes / 60) * flow;
-    const daily = perEvent * events;
     document.getElementById("ssPerEvent").value = perEvent > 0 ? `${perEvent.toFixed(2)} L` : "";
-    document.getElementById("ssDaily").value = daily > 0 ? `${daily.toFixed(2)} L` : "";
   }
 
   async function saveSupplySetting() {
@@ -135,19 +134,15 @@
     const supplyMethod = document.getElementById("ssMethod").value;
     const minutesPerEvent = parseFloat(document.getElementById("ssMinutes").value);
     const flowRatePerBag = parseFloat(document.getElementById("ssFlow").value);
-    const eventsPerDay = parseFloat(document.getElementById("ssEvents").value);
 
     if (!settingDate) return alert("적용일자를 입력하세요!");
     if (isNaN(minutesPerEvent) || minutesPerEvent <= 0) return alert("공급시간(분)을 입력하세요!");
-    if (isNaN(flowRatePerBag) || flowRatePerBag <= 0) return alert("시간당 급액량(L/h)을 입력하세요!");
-    if (isNaN(eventsPerDay) || eventsPerDay <= 0) return alert("급액횟수를 입력하세요!");
-
-    const dailySupplyL = Math.round(((minutesPerEvent / 60) * flowRatePerBag * eventsPerDay) * 100) / 100;
+    if (isNaN(flowRatePerBag) || flowRatePerBag <= 0) return alert("끝 배지 유량(L/h)을 입력하세요!");
 
     const data = {
       settingDate, lineNo, supplyMethod,
-      minutesPerEvent, flowRatePerBag, eventsPerDay,
-      dailySupplyL,
+      minutesPerEvent, flowRatePerBag,
+      perEventL: Math.round(((minutesPerEvent / 60) * flowRatePerBag) * 100) / 100,
       updatedAt: new Date().toISOString()
     };
 
@@ -188,7 +183,7 @@
     } catch (e) {
       console.error("급액 셋팅 불러오기 오류:", e);
       const tb = document.getElementById("ssListBody");
-      if (tb) tb.innerHTML = `<tr><td colspan="8" class="empty-box">오류: ${e.message}</td></tr>`;
+      if (tb) tb.innerHTML = `<tr><td colspan="7" class="empty-box">오류: ${e.message}</td></tr>`;
     }
   }
 
@@ -196,24 +191,26 @@
     const tb = document.getElementById("ssListBody");
     if (!tb) return;
     if (!supplySettings.length) {
-      tb.innerHTML = `<tr><td colspan="8" class="empty-box">등록된 급액 셋팅이 없습니다.</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="7" class="empty-box">등록된 급액 셋팅이 없습니다.</td></tr>`;
       return;
     }
-    tb.innerHTML = supplySettings.map(s => `
+    tb.innerHTML = supplySettings.map(s => {
+      const perEvent = s.perEventL != null ? s.perEventL
+        : ((parseFloat(s.minutesPerEvent) / 60) * parseFloat(s.flowRatePerBag)).toFixed(2);
+      return `
       <tr>
         <td>${s.settingDate || "-"}</td>
         <td>${s.lineNo || "-"}</td>
         <td>${s.supplyMethod || "-"}</td>
         <td>${s.minutesPerEvent || "-"}분</td>
         <td>${s.flowRatePerBag || "-"} L/h</td>
-        <td>${s.eventsPerDay || "-"}회</td>
-        <td><strong>${s.dailySupplyL || "-"} L</strong></td>
+        <td><strong>${perEvent} L</strong></td>
         <td>
           <button class="btn-sm btn-primary" onclick="editSupplySetting('${s.id}')">수정</button>
           <button class="btn-sm btn-danger" onclick="deleteSupplySetting('${s.id}')">삭제</button>
         </td>
-      </tr>
-    `).join("");
+      </tr>`;
+    }).join("");
   }
 
   function editSupplySetting(id) {
@@ -222,10 +219,9 @@
     document.getElementById("ssEditId").value = id;
     document.getElementById("ssDate").value = s.settingDate || "";
     document.getElementById("ssLine").value = s.lineNo || "V01";
-    document.getElementById("ssMethod").value = s.supplyMethod || "시간간격";
+    document.getElementById("ssMethod").value = s.supplyMethod || "적산일사";
     document.getElementById("ssMinutes").value = s.minutesPerEvent || "";
     document.getElementById("ssFlow").value = s.flowRatePerBag || "";
-    document.getElementById("ssEvents").value = s.eventsPerDay || "";
     updateSupplyCalc();
     document.getElementById("ssFormTitle").textContent = "✏️ 급액 셋팅 수정";
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -241,11 +237,10 @@
       alert("✅ 삭제되었습니다!");
       await loadSupplySettings();
     } catch (e) {
-      alert("❌ 삭제 실패: " + e.message);
+      alert("❌ 삭제 실: " + e.message);
     }
   }
 
-  // ✅ 해당 라인 최신 설정을 폼에 복사 (날짜는 오늘)
   function copyLastSetting() {
     const line = document.getElementById("ssLine").value;
     let src = supplySettings.find(s => s.lineNo === line);
@@ -255,10 +250,9 @@
     document.getElementById("ssEditId").value = "";
     document.getElementById("ssDate").valueAsDate = new Date();
     document.getElementById("ssLine").value = src.lineNo || line;
-    document.getElementById("ssMethod").value = src.supplyMethod || "시간간격";
+    document.getElementById("ssMethod").value = src.supplyMethod || "적산일사";
     document.getElementById("ssMinutes").value = src.minutesPerEvent || "";
     document.getElementById("ssFlow").value = src.flowRatePerBag || "";
-    document.getElementById("ssEvents").value = src.eventsPerDay || "";
     updateSupplyCalc();
     document.getElementById("ssFormTitle").textContent = "💧 급액 셋팅 등록 (라인별·일자별)";
   }
@@ -267,12 +261,10 @@
     document.getElementById("ssEditId").value = "";
     document.getElementById("ssDate").valueAsDate = new Date();
     document.getElementById("ssLine").value = "V01";
-    document.getElementById("ssMethod").value = "시간간격";
+    document.getElementById("ssMethod").value = "적산일사";
     document.getElementById("ssMinutes").value = "";
     document.getElementById("ssFlow").value = "";
-    document.getElementById("ssEvents").value = "";
     document.getElementById("ssPerEvent").value = "";
-    document.getElementById("ssDaily").value = "";
     document.getElementById("ssFormTitle").textContent = "💧 급액 셋팅 등록 (라인별·일자별)";
   }
 
@@ -428,8 +420,7 @@
       }
     });
 
-    // ✅ 급액 셋팅 자동계산 (입력할 때마다)
-    ["ssMinutes", "ssFlow", "ssEvents"].forEach(id => {
+    ["ssMinutes", "ssFlow"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener("input", updateSupplyCalc);
     });

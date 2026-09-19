@@ -167,16 +167,20 @@
     }
   }
 
-  // ✅ 배액율 계산 (최신 급액셋팅 매칭)
+  // ✅ 배액율 = 배액량(L) ÷ (기록의 횟수 × 기준 1회 급액량) × 100
   function getRatio(r) {
     if (!r) return null;
     const recLine = r.line || r.lineNo || "V01";
     const drainMl = parseFloat(r.drainAmount);
-    if (isNaN(drainMl) || drainMl <= 0) return null;
+    const events = parseFloat(r.supplyEvents);
+    if (isNaN(drainMl) || drainMl <= 0 || isNaN(events) || events <= 0) return null;
     const ss = supplySettings.filter(s => (s.lineNo || s.line || "V01") === recLine && s.settingDate <= r.measureDate)
       .sort((a, b) => b.settingDate.localeCompare(a.settingDate))[0];
-    if (!ss || !(parseFloat(ss.dailySupplyL) > 0)) return null;
-    return Math.round((drainMl / 1000) / parseFloat(ss.dailySupplyL) * 1000) / 10;
+    if (!ss) return null;
+    const perEventL = (parseFloat(ss.minutesPerEvent) / 60) * parseFloat(ss.flowRatePerBag);
+    const dailyL = perEventL * events;
+    if (!(dailyL > 0)) return null;
+    return Math.round((drainMl / 1000) / dailyL * 1000) / 10;
   }
 
   async function loadZones() {
