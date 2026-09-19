@@ -504,18 +504,25 @@ canvas#deviationChart, canvas#warningChart { max-height: 280px; width: 100% !imp
 }
 
 @media (max-width: 480px) {
-  .grid-4 { grid-template-columns: 1fr; }
-  .search-area { gap: 4px; }
-  .date-row { flex-wrap: wrap; }
-  .info-row { gap: 8px; }
-  .modal-body { padding: 10px; }
-  .past-table th:nth-child(3), .past-table td:nth-child(3) { display: none; }
-  
-  /* 설정 페이지 그리드 */
-  .form-grid, #adminArea .form-grid { grid-template-columns: 75px 1fr; }
+  /* ✅ form-grid는 4칸 유지 (한 줄에 2개 항목: 라벨+입력 라벨+입력) */
+  .form-grid, #adminArea .form-grid { 
+    grid-template-columns: 65px 1fr 65px 1fr; 
+    gap: 6px 8px;
+  }
+  .form-grid label, #adminArea .form-grid label { 
+    font-size: 9.5px; 
+    padding-right: 4px;
+    white-space: nowrap;
+  }
+  .form-grid input, .form-grid select, .form-grid textarea,
+  #adminArea .form-grid input, #adminArea .form-grid select, #adminArea .form-grid textarea {
+    font-size: 10.5px;
+    padding: 5px 6px;
+    height: 28px;
+  }
   .form-grid .full, #adminArea .form-grid .full { grid-column: 2 / -1; }
   
-  /* 설정 페이지 폼 */
+  /* 나머지 설정 페이지 폼은 그대로 */
   #adminArea .card .form-row { gap: 4px; }
   #adminArea .card .form-row label { width: 100%; text-align: left; }
   #adminArea .card .form-row.short input { flex: 1; min-width: 0; }
