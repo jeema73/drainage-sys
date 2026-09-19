@@ -1,253 +1,55 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <script src="js/common.js"></script>
   <meta charset="UTF-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>인쇄/CSV · 강북구 스마트팜</title>
-  <link rel="stylesheet" href="css/style.css?v=11">
+  <title>인쇄/CSV · 강북구 스마트팜 재배단지</title>
+  <link rel="stylesheet" href="style.css?v=20260919">
   <link rel="icon" href="data:;base64,=">
-  <style>
-    /* ✅ 전체 페이지 배경 */
-    body {
-      background: none;
-      background-color: #f5f5f5;
-    }
-    body::before { display: none; }
-    /* ✅ TOP바 — AI분석리포트와 완전 동일 */
-    .top-header {
-      background: 
-        linear-gradient(rgba(47, 70, 56, 0.55), rgba(5, 8, 6, 0.55)),
-        url("https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNjA4MThfMjgy%2FMDAxNzg3MDM3MjU3NDA2.4ypGxvywbosdDIW5SOx70sO59WN6BiVoJx9jyh6zm9kg.0yvw-6Je2OJWoG0uXfYA9QuhnJz2nUkA_BH2oqEjv0Yg.JPEG%2F_CYL7346.jpg&type=a340") no-repeat center center !important;
-      background-size: cover !important;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-    }
-    .header-title {
-      color: #fffacf !important;
-      font-weight: bold;
-      font-size: 18px !important;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-    .top-meta {
-      font-size: 11.5px;
-      color: #faf9d6;
-      margin-top: 2px;
-      line-height: 1.4;
-      opacity: 0.95;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
-    }
-    .top-meta span { display: inline-block; margin-right: 14px; }
-    /* ✅ 권한 메뉴 */
-    .sidebar-menu a { display: none; }
-    .sidebar-menu a.visible { display: block; }
-    /* ✅ 사용자 정보 박스 */
-    .user-info-box {
-      background: rgba(0, 70, 27, 0.4);
-      backdrop-filter: blur(4px);
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin: 8px;
-      border: 1px solid rgba(4, 199, 53, 0.15);
-    }
-    .user-info-box .sys-name {
-      font-size: 18px;
-      font-weight: bold;
-      color: #b5c8f1;
-      margin-bottom: 4px;
-    }
-    .sys-name1 {
-      font-size: 9px;
-      font-weight: bold;
-      color: #6b99fc;
-      margin-bottom: 1px;
-    }
-    .user-info-box .user-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-    }
-    .user-name {
-      font-weight: normal;
-      color: #f9fc3e;
-      font-size: 11px;
-    }
-    .logout-btn {
-      font-size: 9px;
-      padding: 2px 6px;
-      background: #ffffff;
-      border: 0px solid #000000;
-      border-radius: 9px;
-      color: #000c01;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    /* ✅ 하단 로고 영역 */
-    .sidebar-logo-bottom {
-      text-align: center;
-      padding: 8px 6px;
-      margin: 4px 8px;
-    }
-    .sidebar-logo-bottom img {
-      width: 50%;
-      height: auto;
-      opacity: 0.85;
-    }
-/* ✅ 날씨 영역 (선택자 우선순위 강화) */
-    .sidebar .weather-box {
-      padding: 6px !important;
-      margin: 4px 8px 10px 8px !important;
-      background: linear-gradient(135deg, #2c463e, #355837) !important;
-      border-radius: 8px !important;
-      border: 0px solid #546154 !important;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    }
-    .sidebar .weather-table {
-      width: 100% !important;
-      border-collapse: collapse !important;
-      background: transparent !important;
-    }
-    .sidebar .weather-table td {
-      border: 0px solid rgba(255, 255, 255, 0.2) !important;
-      padding: 4px 6px !important;
-      vertical-align: middle !important;
-      text-align: center !important;
-      background: transparent !important;
-      color: #ffffff !important;
-    }
-    .sidebar .weather-icon {
-      font-size: 35px !important;
-      line-height: 1 !important;
-    }
-    .sidebar .weather-temp {
-      font-size: 22px !important;
-      font-weight: bold !important;
-      color: #dbb1b1 !important;
-    }
-    .sidebar .weather-desc {
-      font-size: 10px !important;
-      color: #e8f5e9 !important;
-      margin-top: 0px !important;
-    }
-    .sidebar .weather-range, 
-    .sidebar .weather-location {
-      font-size: 10px !important;
-      color: #f1f8e9 !important;
-      text-align: center !important;
-    }
-
-    /* ✅ 인쇄페이지 본문 스타일 — 기존 그대로 유지 */
-    * { font-size: 11px; }
-    .card { 
-      background: #fff; 
-      border-radius: 8px; 
-      padding: 12px; 
-      margin-bottom: 8px; 
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-    .card1 { 
-      background: #f8fff2; 
-      border-radius: 8px; 
-      padding: 12px; 
-      margin-bottom: 8px; 
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-      border: 1px solid #bbd3bb;
-    }
-    @page { size: A4 landscape; margin: 8mm; }
-    .page-top-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-    .search-area { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 8px 0; padding: 8px 10px; background: #f5f5f5; border-radius: 6px; }
-    .search-area input { padding: 4px; font-size: 11px; }
-    button { padding: 5px 12px; margin-left: 4px; font-size: 11px; border-radius: 4px; border: none; cursor: pointer; }
-    .btn-primary { background: #2196f3; color: #fff; }
-    .btn-print { background: #d32f2f; color: #fff; }
-    .btn-csv { background: #2e7d32; color: #fff; }
-    .table-container { overflow-x: auto; margin-top: 10px; background: #fff; padding: 4px; border-radius: 4px; border: 1px solid #ddf5d8;}
-    table { border-collapse: collapse; font-size: 10px; white-space: nowrap; background: #fff; width: 100%; }
-    th, td { 
-      border: 1px solid #333 !important; 
-      padding: 4px 6px !important; 
-      text-align: center !important; 
-      vertical-align: middle !important;
-      color: #000 !important;
-      font-size: 10px !important;
-      background: #fff !important;
-    }
-    th { background: #fff !important; font-weight: 600 !important; }
-    .zone-name { 
-      writing-mode: horizontal-tb !important;
-      font-size: 10px !important; 
-      font-weight: bold !important;
-      color: #000 !important;
-      white-space: nowrap;
-      padding: 4px 6px !important;
-      background: #fff !important;
-    }
-    .sub-col { font-size: 9px !important; color: #333 !important; background: #fff !important; }
-    .sample-col { border-left: 2px dashed #999 !important; background: #fff !important; }
-    .empty-box { text-align: center; padding: 20px !important; color: #666; font-size: 11px; background: #fff !important; }
-    /* ✅ 인쇄시 스타일 */
-    @media print {
-      * { -webkit-print-color-adjust: economy; print-color-adjust: economy; }
-      body * { visibility: hidden; }
-      .table-container, .table-container * { visibility: visible; }
-      .table-container { position: absolute; left: 0; top: 0; width: 100%; background: #fff !important; }
-      .table-container { overflow: visible; }
-      table { width: 100%; background: #fff !important; }
-      th { background: #fff !important; color: #000 !important; border: 1px solid #000 !important; }
-      td { background: #fff !important; color: #000 !important; border: 1px solid #000 !important; }
-      .zone-name { background: #fff !important; color: #000 !important; border: 1px solid #000 !important; }
-      .sample-col { background: #fff !important; }
-      @page { margin: 8mm; size: A4 landscape; }
-    }
-    @media (max-width:480px) {
-      .search-area { gap: 4px; }
-    }
-  </style>
 </head>
 <body>
-  <!-- ✅ 전체 레이아웃 — AI분석리포트와 완전 동일 -->
+  <!-- ✅ 통일된 전체 레이아웃 — AI설정과 완전 동일 -->
   <div class="app-layout">
-    <!-- ✅ 왼쪽 사이드바 — AI분석리포트와 완전 동일 -->
+    <!-- ✅ 왼쪽 사이드바 — AI설정과 완전 동일 -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo-top">
         <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1.png" alt="강북구 로고">
       </div>
+      <!-- ✅ 사용자 정보 박스 — AI설정과 완전 동일 -->
       <!-- ✅ 사용자 정보 박스 -->
       <div class="user-info-box" id="userInfoBox">
-        <div class="sys-name1">Drainage system</div>
+        <div class="sys-name1">Drainage System</div>
         <div class="sys-name">배액 관리 시스템</div>
-        <div class="menu-divider1"></div>
         <div class="user-row">
           <span class="user-name" id="sidebarUserName">사용자 정보</span>
           <a href="#" class="logout-btn" id="sidebarLogoutBtn">LOGOUT</a>
         </div>
       </div>
       <div class="menu-divider"></div>
-      <!-- ✅ 메뉴 -->
+      <!-- ✅ 메뉴 — 권한별 보임/숨김, AI설정과 완전 동일 -->
       <div class="sidebar-menu" id="sidebarMenu">
         <a href="dashboard.html" data-role="all">📊 대시보드</a>
         <a href="drain-record.html" data-role="all">📝 배액기록</a>
         <a href="analysis-report.html" data-role="all">📈 분석리포트</a>
         <a href="ai-report.html" data-role="all">🤖 AI분석리포트</a>
-        <a href="print-page.html" class="active" data-role="all">🖨️ 인쇄/CSV</a>
+        <a href="print-page.html" data-role="all">🖨️ 인쇄/CSV</a>
         <div class="menu-divider"></div>
         <a href="supply-standard.html" data-role="admin,manager">⚙️ 급액기준등록</a>
         <a href="zone-manage.html" data-role="admin,manager">📍 구역등록</a>
         <a href="farm-settings.html" data-role="admin,manager">🏠 농장설정</a>
         <a href="ai-settings.html" data-role="admin">🔧 AI분석설정</a>
-        <a href="account-manage.html" data-role="admin">👤 계정관리</a>
+        <a href="account-manage.html" class="active" data-role="admin">👤 계정관리</a>
       </div>
       <!-- ✅ 구분선 -->
       <div class="menu-divider"></div>
-      <!-- ✅ 하단 로고 -->
+      <!-- ✅ 하단 로고 — AI설정과 완전 동일 -->
       <div class="sidebar-logo-bottom">
         <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1_eng.png" alt="하단로고">
       </div>
-      <!-- ✅ 날씨 영역 -->
+      <!-- ✅ 날씨 영역 — AI설정과 완전 동일 -->
       <div class="weather-box" id="weatherBox">
         <table class="weather-table">
           <tr>
@@ -291,12 +93,12 @@
               <p style="font-size:11px; margin:2px 0;">날짜를 지정하고 조회 후 인쇄 또는 CSV로 내보낼 수 있습니다.</p>
             </div>
           </div>
-          <div class="card1" style="gap:6px; justify-content: center;">
+          <div class="daily-input-box">
             <label style="font-size:11px;">시작일:</label>
             <input type="date" id="sDate">
             <label style="font-size:11px;">종료일:</label>
             <input type="date" id="eDate">
-            <button class="btn-primary" onclick="loadData()">🔍 조회</button><br><br>
+            <button class="btn primary" onclick="loadData()">🔍 조회</button><br><br>
             <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; justify-content: right;">
               <button class="btn-csv" onclick="exportCSV()">📥 CSV 다운로드</button>
               <button class="btn-print" onclick="window.print()">🖨️ 인쇄하기</button>
@@ -306,8 +108,8 @@
           <div class="table-container">
             <div id="printArea" style="display:none;">
               <div style="text-align:left; margin-bottom:10px;">
-                <h3 style="margin:4px 0; font-size:24px; color:#033f1c;">딸기 배액 측정 기록표</h3>
-                <label style="margin:2px 0; font-size:14px; color:#023a18;" id="periodInfo"></label>
+                <h3 style="margin:4px 0; font-size:24px; color:#31425a;">딸기 배액 측정 기록표</h3>
+                <label style="margin:2px 0; font-size:13px; color:#313d49;" id="periodInfo"></label>
                 <label style="margin:2px 0; font-size:10px; color:#666;">· 측정기준: EC·pH·온도/배액량</label>
               </div>
               <table id="printTable"></table>
@@ -318,386 +120,7 @@
     </div>
   </div>
   <div class="overlay" id="overlay"></div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
-  
-  const firebaseConfig = {
-    apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
-    authDomain: "smartfarm-drainage-system.firebaseapp.com",
-    projectId: "smartfarm-drainage-system",
-    storageBucket: "smartfarm-drainage-system.firebasestorage.app",
-    messagingSenderId: "699907108321",
-    appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
-    measurementId: "G-W7L21Y8JZN"
-  };
-  
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const FARM_SETTINGS_ID = "current";
-  let zoneList = [];
-  let recordList = [];
-  let displayZones = [];
-
-  // ✅ 권한 상수
-  const ROLE_ADMIN = "admin";
-  const ROLE_MANAGER = "manager";
-  const ROLE_WORKER = "worker";
-  const ROLE_GUEST = "guest";
-  function getRoleName(role) {
-    const map = { admin:"최고관리자", manager:"매니저", worker:"공공근로자", guest:"게스트" };
-    return map[role] || role;
-  }
-  function applyMenuPermissions(userRole) {
-    document.querySelectorAll(".sidebar-menu a").forEach(link => {
-      const allowedRoles = (link.dataset.role || "all").split(",");
-      if (allowedRoles.includes("all") || allowedRoles.includes(userRole)) {
-        link.classList.add("visible");
-      } else {
-        link.classList.remove("visible");
-      }
-    });
-  }
-
-  // ✅ 날짜 포맷
-  function formatDateYmd(dateStr) {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }
-
-  // ✅ 농장정보 불러오기 → TOP바에 표시
-  async function loadFarmInfo() {
-    try {
-      const snap = await getDoc(doc(db, "settings", FARM_SETTINGS_ID));
-      const topFarmNameEl = document.getElementById("topFarmName");
-      const topMetaEl = document.getElementById("topFarmMeta");
-      if (snap.exists()) {
-        const farm = snap.data();
-        topFarmNameEl.textContent = farm.farmName || "강북구 스마트팜 재배단지";
-        topMetaEl.innerHTML = `
-          <span>🌿 재배작물: ${farm.cropType || "딸기"}</span>
-          <span>🍓 품종: ${farm.variety || "금실"}</span>
-          <span>🌱 정식일: ${formatDateYmd(farm.plantingDate) || "-"}</span>
-        `;
-      } else {
-        topFarmNameEl.textContent = "강북구 스마트팜 재배단지";
-        topMetaEl.innerHTML = `<span style="color:#ffd700;">⚠️ 농장설정 미등록</span>`;
-      }
-    } catch (e) { 
-      console.log("농장설정 오류:", e); 
-      document.getElementById("topFarmName").textContent = "강북구 스마트팜 재배단지";
-      document.getElementById("topFarmMeta").innerHTML = `<span style="color:red;">정보 불러오기 오류</span>`;
-    }
-  }
-
-  // ✅ 권한 확인 함수 (admin, manager, worker, guest 허용)
-  function checkAuth() {
-    const user = JSON.parse(localStorage.getItem("user") || "null");
-    const userRole = localStorage.getItem("userRole") || "";
-    const allowRoles = ["admin", "manager", "worker", "guest"];
-    
-    if (!user || !user.userId || !userRole) {
-      location.href = "index.html";
-      return null;
-    }
-    
-    if (!allowRoles.includes(userRole)) {
-      alert("접근 권한이 없습니다.");
-      location.href = "dashboard.html";
-      return null;
-    }
-
-    const userName = user.userName || user.userId || "사용자";
-    document.getElementById("sidebarUserName").textContent = `${userName} ${getRoleName(userRole)}`;
-    applyMenuPermissions(userRole);
-    document.getElementById("adminArea").style.display = "block";
-    return { user, userRole };
-  }
-
-  // ✅ 로그아웃
-  function doLogout() {
-    if (confirm("로그아웃 하시겠습니까?")) {
-      localStorage.removeItem("user");
-      localStorage.removeItem("userRole");
-      location.href = "index.html";
-    }
-  }
-
-  // ✅ 햄버거 + 로그아웃
-  document.addEventListener("click", e => {
-    if (e.target.id === "hamBtn" || e.target.closest("#hamBtn")) {
-      document.getElementById("sidebar").classList.toggle("open");
-      document.getElementById("overlay").classList.toggle("show");
-    }
-    if (e.target.id === "sidebarLogoutBtn" || e.target.closest("#sidebarLogoutBtn")) {
-      e.preventDefault();
-      doLogout();
-    }
-  });
-
-  // ✅ 날씨 불러오기
-  async function loadWeather() {
-    try {
-      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.63&longitude=127.03&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=1");
-      const data = await res.json();
-      const temp = Math.round(data.current.temperature_2m * 10) / 10;
-      const minTemp = Math.round(data.daily.temperature_2m_min[0]);
-      const maxTemp = Math.round(data.daily.temperature_2m_max[0]);
-      const code = data.current.weather_code;
-      let icon = "☀️", desc = "맑음";
-      if (code === 1 || code === 2) { icon = "🌤️"; desc = "구름조금"; }
-      else if (code === 3) { icon = "☁️"; desc = "흐림"; }
-      else if (code >= 45 && code <= 48) { icon = "🌫️"; desc = "안개"; }
-      else if (code >= 51 && code <= 67) { icon = "🌧️"; desc = "비"; }
-      else if (code >= 71 && code <= 77) { icon = "❄️"; desc = "눈"; }
-      else if (code >= 80 && code <= 82) { icon = "🌧️"; desc = "소나기"; }
-      const elIcon = document.getElementById("weatherIcon");
-      const elTemp = document.getElementById("weatherTemp");
-      const elDesc = document.getElementById("weatherDesc");
-      const elRange = document.getElementById("weatherRange");
-      if(elIcon) elIcon.textContent = icon;
-      if(elTemp) elTemp.textContent = `${temp}°`;
-      if(elDesc) elDesc.textContent = desc;
-      if(elRange) elRange.textContent = `최저 ${minTemp}° / 최고 ${maxTemp}°`;
-    } catch(e) {
-      const elDesc = document.getElementById("weatherDesc");
-      if(elDesc) elDesc.textContent = "날씨 불러오기 실패";
-    }
-  }
-
-  // ✅ 페이지 최초 로드
-  window.onload = async () => {
-    // ✅ 권한 확인
-    const auth = checkAuth();
-    if (!auth) return;
-
-    await loadFarmInfo(); // ✅ 상단 농장정보 표시
-    loadWeather(); // ✅ 날씨 불러오기
-
-    // ✅ 기본 기간: 이번주 월~금
-    const today = new Date();
-    const day = today.getDay() || 7;
-    const mon = new Date(today);
-    mon.setDate(today.getDate() - day + 1);
-    const fri = new Date(mon);
-    fri.setDate(mon.getDate() + 4);
-    document.getElementById("sDate").valueAsDate = mon;
-    document.getElementById("eDate").valueAsDate = fri;
-
-    // ✅ 데이터 불러오기
-    await loadZones();
-    await loadData();
-  };
-
-  async function loadZones() {
-    const zSnap = await getDocs(collection(db, "zones"));
-    zoneList = zSnap.docs.map(d => ({id:d.id, ...d.data()}));
-    
-    const zoneMap = new Map();
-    zoneList.forEach(data => {
-      const zoneName = String(data.zoneName || data.name || "");
-      if (!zoneName) return;
-      const isSample = Boolean(data.hasSampleData === true || data.isSampleZone === true);
-      const isSeedling = zoneName.includes("육묘") ? 1 : 0;
-      const numMatch = zoneName.match(/(\d+)/);
-      const sortNum = numMatch ? parseInt(numMatch[1], 10) : 999;
-      const zoneInfo = {
-        zoneName: zoneName,
-        zoneNo: sortNum,
-        isSeedling: isSeedling,
-        sortNum: sortNum,
-        lineNo: String(data.line || data.supplyLine || "V01"),
-        useSample: isSample
-      };
-      if (!zoneMap.has(zoneName)) zoneMap.set(zoneName, zoneInfo);
-    });
-    
-    displayZones = Array.from(zoneMap.values()).filter(Boolean).sort((a, b) => {
-      if (!a || !b) return 0;
-      if (a.isSeedling !== b.isSeedling) return a.isSeedling - b.isSeedling;
-      return a.sortNum - b.sortNum;
-    });
-    zoneList = [...displayZones];
-  }
-
-  function getVal(r, field) {
-    if (!r) return "-";
-    const v = r[field];
-    if (v === undefined || v === null || v === "") return "-";
-    return String(v);
-  }
-
-  window.loadData = async function() {
-    const sDate = document.getElementById("sDate").value;
-    const eDate = document.getElementById("eDate").value;
-    if (!sDate || !eDate) return alert("시작일과 종료일을 지정하세요!");
-    document.getElementById("periodInfo").textContent = `${sDate} ~ ${eDate} · 등록 구역 ${displayZones.length}개`;
-    const snap = await getDocs(collection(db, "drain_records"));
-    const allRecords = snap.docs.map(d => ({id:d.id, ...d.data()}));
-    
-    recordList = allRecords.filter(r => {
-      if (!r || !r.measureDate) return false;
-      return r.measureDate >= sDate && r.measureDate <= eDate;
-    });
-    renderTable();
-    document.getElementById("printArea").style.display = "block";
-  };
-
-  function renderTable() {
-    const table = document.getElementById("printTable");
-    if (!table) return;
-    const dateGroups = {};
-    recordList.forEach(r => {
-      if (!r || !r.measureDate) return;
-      const dt = r.measureDate;
-      if (!dateGroups[dt]) dateGroups[dt] = [];
-      dateGroups[dt].push(r);
-    });
-    let html = `<thead><tr>
-      <th rowspan="2" style="min-width:70px;">측정일자</th>
-      <th rowspan="2" style="min-width:50px;">측정시간</th>
-      <th rowspan="2" style="min-width:40px;">항목</th>`;
-    displayZones.forEach(z => {
-      if (!z) return;
-      const colSpan = z.useSample ? 2 : 1;
-      html += `<th colspan="${colSpan}" class="zone-name">${z.zoneName}<br>(${z.lineNo})</th>`;
-    });
-    html += `</tr><tr>`;
-    displayZones.forEach(z => {
-      if (!z) return;
-      if (z.useSample) {
-        html += `<th class="sub-col">기본</th><th class="sub-col sample-col">샘플</th>`;
-      } else {
-        html += `<th class="sub-col">값</th>`;
-      }
-    });
-    html += `</tr></thead><tbody>`;
-    const sortedDates = Object.keys(dateGroups).sort();
-    if (sortedDates.length === 0) {
-      const totalCols = 3 + displayZones.filter(Boolean).reduce((s,z) => s + (z.useSample ? 2 : 1), 0);
-      html += `<tr><td colspan="${totalCols}" class="empty-box">📭 해당 기간에 측정기록이 없습니다.</td></tr>`;
-    }
-    for (const dt of sortedDates) {
-      const recs = dateGroups[dt] || [];
-      const times = recs.map(r => r.measureTime || "09:00").filter(Boolean).sort();
-      const firstTime = times[0] || "09:00";
-      const zoneData = {};
-      recs.forEach(r => {
-        if (!r) return;
-        const zName = String(r.zoneName || "");
-        if (!zName) return;
-        const matchedZone = zoneList.find(z => z && String(z.zoneName) === zName);
-        if (matchedZone) zoneData[matchedZone.zoneName] = r;
-      });
-      html += `<tr>`;
-      html += `<td rowspan="3">${dt.replace(/-/g, ".")}</td>`;
-      html += `<td rowspan="3">${firstTime}</td>`;
-      html += `<td>EC</td>`;
-      displayZones.forEach(z => {
-        if (!z) return;
-        const r = zoneData[z.zoneName];
-        if (z.useSample) {
-          html += `<td>${getVal(r, "drainEc")}</td><td class="sample-col">${getVal(r, "sampleEc")}</td>`;
-        } else {
-          html += `<td>${getVal(r, "drainEc")}</td>`;
-        }
-      });
-      html += `</tr>`;
-      html += `<tr><td>pH</td>`;
-      displayZones.forEach(z => {
-        if (!z) return;
-        const r = zoneData[z.zoneName];
-        if (z.useSample) {
-          html += `<td>${getVal(r, "drainPh")}</td><td class="sample-col">${getVal(r, "samplePh")}</td>`;
-        } else {
-          html += `<td>${getVal(r, "drainPh")}</td>`;
-        }
-      });
-      html += `</tr>`;
-      html += `<tr><td>온도/배액량</td>`;
-      displayZones.forEach(z => {
-        if (!z) return;
-        const r = zoneData[z.zoneName];
-        const temp = getVal(r, "bedTemp");
-        const tempStr = temp === "-" ? "-" : temp + "°C";
-        if (z.useSample) {
-          html += `<td>${tempStr}</td><td class="sample-col">${getVal(r, "drainAmount")}</td>`;
-        } else {
-          html += `<td>${tempStr}</td>`;
-        }
-      });
-      html += `</tr>`;
-    }
-    html += `</tbody>`;
-    table.innerHTML = html;
-  }
-
-  window.exportCSV = function() {
-    if (!recordList.length) return alert("먼저 조회를 해주세요!");
-    const sDate = document.getElementById("sDate").value;
-    const eDate = document.getElementById("eDate").value;
-    let csv = "\uFEFF";
-    csv += `"딸기 배액 측정기록표","${sDate} ~ ${eDate}"\n`;
-    csv += `"측정일자","측정시간","항목"`;
-    displayZones.filter(Boolean).forEach(z => {
-      if (z.useSample) csv += `,"${z.zoneName} 기본","${z.zoneName} 샘플"`;
-      else csv += `,"${z.zoneName}"`;
-    });
-    csv += "\n";
-    const dateGroups = {};
-    recordList.forEach(r => {
-      if (!r || !r.measureDate) return;
-      const dt = r.measureDate;
-      if (!dateGroups[dt]) dateGroups[dt] = [];
-      dateGroups[dt].push(r);
-    });
-    const sortedDates = Object.keys(dateGroups).sort();
-    for (const dt of sortedDates) {
-      const recs = dateGroups[dt] || [];
-      const times = recs.map(r => r.measureTime || "09:00").filter(Boolean).sort();
-      const firstTime = times[0] || "09:00";
-      const zoneData = {};
-      recs.forEach(r => {
-        if (!r) return;
-        const zName = String(r.zoneName || "");
-        const matchedZone = zoneList.find(z => z && String(z.zoneName) === zName);
-        if (matchedZone) zoneData[matchedZone.zoneName] = r;
-      });
-      csv += `"${dt}","${firstTime}","EC"`;
-      displayZones.filter(Boolean).forEach(z => {
-        const r = zoneData[z.zoneName];
-        if (z.useSample) csv += `,"${getVal(r,"drainEc")}","${getVal(r,"sampleEc")}"`;
-        else csv += `,"${getVal(r,"drainEc")}"`;
-      });
-      csv += "\n";
-      csv += `"${dt}","${firstTime}","pH"`;
-      displayZones.filter(Boolean).forEach(z => {
-        const r = zoneData[z.zoneName];
-        if (z.useSample) csv += `,"${getVal(r,"drainPh")}","${getVal(r,"samplePh")}"`;
-        else csv += `,"${getVal(r,"drainPh")}"`;
-      });
-      csv += "\n";
-      csv += `"${dt}","${firstTime}","온도/배액량"`;
-      displayZones.filter(Boolean).forEach(z => {
-        const r = zoneData[z.zoneName];
-        const temp = getVal(r, "bedTemp");
-        const tempStr = temp === "-" ? "-" : temp + "°C";
-        if (z.useSample) csv += `,"${tempStr}","${getVal(r,"drainAmount")}"`;
-        else csv += `,"${tempStr}"`;
-      });
-      csv += "\n";
-    }
-    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `배액기록_${sDate}_${eDate}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-</script>
+   <script src="common.js?v=20260919" defer></script>
+   <script src="assets/js/pages/print-page.js?v=20260919" defer></script>
 </body>
 </html>

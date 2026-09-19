@@ -3,238 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>분석리포트 · 강북구 스마트팜</title>
-  <link rel="stylesheet" href="css/style.css?v=11">
+  <title>분석리포트 · 강북구 스마트팜 재배단지</title>
+  <link rel="stylesheet" href="style.css?v=20260919">
   <link rel="icon" href="data:;base64,=">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
-  <style>
-    /* ✅ 전체 페이지 배경 */
-    body {
-      background: none;
-      background-color: #f5f5f5;
-    }
-    body::before {
-      display: none;
-    }
-    .content-wrapper {
-      padding: 8px 10px;
-      box-sizing: border-box;
-    }
-    .card { 
-      background: #ffffff; border-radius: 8px; padding: 12px; margin-bottom: 8px; 
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-    .card1 { 
-      background: #fbfdf9; 
-      border-radius: 8px; 
-      padding: 12px; 
-      margin-bottom: 8px; 
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-      border: 1px solid #cae9ca;
-    }
-    h3 { font-size: 12px; margin: 0 0 6px 0; }
-    .page-title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-    .page-title-row h2 { margin: 0px 0; font-size: 18px; color: #2e7d32; }
-    .date-select-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; flex-wrap: wrap; font-size: 11px; }
-    .date-select-wrap input, .date-select-wrap select { padding: 6px 8px; font-size: 11px; }
-    .status-filter-box {
-      display: flex;
-      justify-content: center;
-      gap: 4px;
-      margin-bottom: 4px;
-      width: 100%;
-    }
-    .status-filter-box button {
-      flex: 1;
-      max-width: 180px;
-      padding: 6px 4px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 11px;
-      font-weight: normal;
-      text-align: center;
-      background: transparent;
-      color: #666;
-      transition: all 0.2s;
-    }
-    .status-filter-box .all-btn.active { background: #e9e9e9; color: #333; }
-    .status-filter-box .ok-btn.active { background: #e8f5e9; color: #2e7d32; }
-    .status-filter-box .warn-btn.active { background: #fff59d; color: #f57f17; }
-    .status-filter-box .danger-btn.active { background: #ffcdd2; color: #c62828; }
-    .filter-note {
-      margin: 0 0 16px 0;
-      font-size: 9px;
-      color: #c5a100;
-      text-align: center;
-      line-height: 1.5;
-    }
-    .chart-desc {
-      font-size: 9.5px;
-      color: #777;
-      margin: 0 0 8px 0;
-      line-height: 1.5;
-    }
-    .info-row { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin: 0; font-size: 11px; }
-    .table-wrapper { overflow-x: auto; }
-    .table-wrapper table { width: 100%; border-collapse: collapse; font-size: 10px; min-width: 900px; }
-    .table-wrapper th, .table-wrapper td { padding: 6px 4px; border: 1px solid #ddd; text-align: center; white-space: nowrap; }
-    .table-wrapper th { background: #f5f5f5; }
-    .table-wrapper tr { height: 32px; }
-    .warn-row { background: #fff8e1; }
-    .danger-row { background: #ffebee; }
-    .chart-container { position: relative; height: 240px; width: 100%; margin-bottom: 4px; }
-    .chart-container-bar { position: relative; height: 200px; width: 100%; }
-    @media (max-width:480px) {
-      .date-select-wrap { flex-wrap: wrap; }
-      .info-row { gap: 8px; }
-      .chart-container { height: 180px; }
-      .chart-container-bar { height: 160px; }
-    }
-    /* ✅ TOP바 — 대시보드와 완전 동일 */
-    .top-header {
-      background: 
-        linear-gradient(rgba(47, 70, 56, 0.55), rgba(5, 8, 6, 0.55)),
-        url("https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNjA4MThfMjgy%2FMDAxNzg3MDM3MjU3NDA2.4ypGxvywbosdDIW5SOx70sO59WN6BiVoJx9jyh6zm9kg.0yvw-6Je2OJWoG0uXfYA9QuhnJz2nUkA_BH2oqEjv0Yg.JPEG%2F_CYL7346.jpg&type=a340") no-repeat center center !important;
-      background-size: cover !important;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-    }
-    .header-title {
-      color: #fffacf !important;
-      font-weight: bold;
-      font-size: 18px !important;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-    .top-meta {
-      font-size: 11.5px;
-      color: #faf9d6;
-      margin-top: 2px;
-      line-height: 1.4;
-      opacity: 0.95;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
-    }
-    .top-meta span { display: inline-block; margin-right: 14px; }
-    /* ✅ 권한 메뉴 */
-    .sidebar-menu a { display: none; }
-    .sidebar-menu a.visible { display: block; }
-    /* ✅ 사용자 정보 박스 */
-    .user-info-box {
-      background: rgba(0, 70, 27, 0.4);
-      backdrop-filter: blur(4px);
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin: 8px;
-      border: 1px solid rgba(4, 199, 53, 0.15);
-    }
-    .user-info-box .sys-name {
-      font-size: 18px;
-      font-weight: bold;
-      color: #b5c8f1;
-      margin-bottom: 4px;
-    }
-    .sys-name1 {
-      font-size: 9px;
-      font-weight: bold;
-      color: #6b99fc;
-      margin-bottom: 1px;
-    }    
-    .user-info-box .user-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-    }
-    .user-name {
-      font-weight: normal;
-      color: #f9fc3e;
-      font-size: 11px;
-    }
-    .logout-btn {
-      font-size: 9px;
-      padding: 2px 6px;
-      background: #ffffff;
-      border: 0px solid #000000;
-      border-radius: 9px;
-      color: #000c01;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    /* ✅ 하단 로고 영역 */
-    .sidebar-logo-bottom {
-      text-align: center;
-      padding: 8px 6px;
-      margin: 4px 8px;
-    }
-    .sidebar-logo-bottom img {
-      width: 50%;
-      height: auto;
-      opacity: 0.85;
-    }
-    /* ✅ 날씨 영역 */
-    .weather-box {
-      padding: 6px;
-      margin: 4px 8px 10px 8px;
-      background: linear-gradient(135deg, #2c463e, #355837) !important;
-      border-radius: 8px;
-      border: 0px solid #546154;
-    }
-    .weather-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .weather-table td {
-      border: 0px solid rgba(255, 255, 255, 0.2) !important;
-      padding: 4px 6px;
-      vertical-align: middle;
-      text-align: center;
-      background: transparent !important;
-    }
-    .weather-icon {
-      font-size: 35px;
-      line-height: 1;
-    }
-    .weather-temp {
-      font-size: 22px;
-      font-weight: bold;
-      color: #dbb1b1;
-    }
-    .weather-desc {
-      font-size: 10px;
-      color: #e8f5e9;
-      margin-top: 0px;
-    }
-    .weather-range, .weather-location {
-      font-size: 10px;
-      color: #f1f8e9;
-      text-align: center;
-    }
-  </style>
 </head>
 <body>
-  <!-- ✅ 전체 레이아웃 -->
+  <!-- ✅ 통일된 전체 레이아웃 — AI설정과 완전 동일 -->
   <div class="app-layout">
-    <!-- ✅ 왼쪽 사이드바 — 대시보드와 완전 동일 -->
+    <!-- ✅ 왼쪽 사이드바 — AI설정과 완전 동일 -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo-top">
         <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1.png" alt="강북구 로고">
       </div>
+      <!-- ✅ 사용자 정보 박스 — AI설정과 완전 동일 -->
       <!-- ✅ 사용자 정보 박스 -->
       <div class="user-info-box" id="userInfoBox">
-        <div class="sys-name1">Drainage system</div>
+        <div class="sys-name1">Drainage System</div>
         <div class="sys-name">배액 관리 시스템</div>
-        <div class="menu-divider1"></div>
         <div class="user-row">
           <span class="user-name" id="sidebarUserName">사용자 정보</span>
           <a href="#" class="logout-btn" id="sidebarLogoutBtn">LOGOUT</a>
         </div>
       </div>
       <div class="menu-divider"></div>
-      <!-- ✅ 메뉴 -->
+      <!-- ✅ 메뉴 — 권한별 보임/숨김, AI설정과 완전 동일 -->
       <div class="sidebar-menu" id="sidebarMenu">
         <a href="dashboard.html" data-role="all">📊 대시보드</a>
         <a href="drain-record.html" data-role="all">📝 배액기록</a>
-        <a href="analysis-report.html" class="active" data-role="all">📈 분석리포트</a>
+        <a href="analysis-report.html" data-role="all">📈 분석리포트</a>
         <a href="ai-report.html" data-role="all">🤖 AI분석리포트</a>
         <a href="print-page.html" data-role="all">🖨️ 인쇄/CSV</a>
         <div class="menu-divider"></div>
@@ -242,15 +39,15 @@
         <a href="zone-manage.html" data-role="admin,manager">📍 구역등록</a>
         <a href="farm-settings.html" data-role="admin,manager">🏠 농장설정</a>
         <a href="ai-settings.html" data-role="admin">🔧 AI분석설정</a>
-        <a href="account-manage.html" data-role="admin">👤 계정관리</a>
+        <a href="account-manage.html" class="active" data-role="admin">👤 계정관리</a>
       </div>
       <!-- ✅ 구분선 -->
       <div class="menu-divider"></div>
-      <!-- ✅ 하단 로고 -->
+      <!-- ✅ 하단 로고 — AI설정과 완전 동일 -->
       <div class="sidebar-logo-bottom">
         <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1_eng.png" alt="하단로고">
       </div>
-      <!-- ✅ 날씨 영역 -->
+      <!-- ✅ 날씨 영역 — AI설정과 완전 동일 -->
       <div class="weather-box" id="weatherBox">
         <table class="weather-table">
           <tr>
@@ -292,11 +89,11 @@
             <h2 style="margin:0 0 4px 0; font-size:14px;">📝 분 석 리 포 트</h2>
             <p style="margin:0; font-size:10.5px; color:#666;">최근 7일간 데이터를 기준으로 분석합니다.</p>
           </div>
-          <div class="card1">
+          <div class="daily-input-box">
             <div class="date-select-wrap">
-              <input type="date" id="sDate" onchange="applyFilter()">
+              <input type="date" id="sDate">
               <span>~</span>
-              <input type="date" id="eDate" onchange="applyFilter()">
+              <input type="date" id="eDate">
               <span>구역:</span>
               <select id="zoneSel" onchange="applyFilter()">
                 <option value="">전체 구역</option>
@@ -308,7 +105,7 @@
               <button class="warn-btn" data-filter="warn" onclick="setFilter('warn')">주의 <span id="fWarn">0</span></button>
               <button class="danger-btn" data-filter="danger" onclick="setFilter('danger')">경고 <span id="fDanger">0</span></button>
             </div>
-            <p class="filter-note">
+            <p class="small-font">
               ※ EC: 기준+0.2와 비교 / pH: 기준값과 직접 비교<br>
               ⚠️ 주의: EC +0.4~+0.6 또는 -0.31~-0.4 / pH +0.5~+0.8 또는 -0.41~-0.6<br>
               🚨 경고: EC +0.7↑ 또는 -0.5↓ / pH +0.9↑ 또는 -0.7↓ 또는 pH 6.8↑ 또는 5.2↓
@@ -347,23 +144,24 @@
               <table id="reportTable">
                 <thead>
                   <tr>
-                    <th>📅 측정일자</th>
-                    <th>⏰ 측정시간</th>
-                    <th>🏡 구역/라인</th>
-                    <th>💧 배액EC</th>
-                    <th>📏 기준EC</th>
-                    <th>📊 EC편차</th>
-                    <th>💧 배액pH</th>
-                    <th>📏 기준pH</th>
-                    <th>📊 pH편차</th>
-                    <th>🧪 샘플EC</th>
-                    <th>🧪 샘플pH</th>
-                    <th>🌡️ 배지온도</th>
-                    <th>✅ 상태</th>
+                    <th>📅측정일자</th>
+                    <th></th>
+                    <th>🏡구역/라인</th>
+                    <th>💧배액EC</th>
+                    <th>📏기준EC</th>
+                    <th>📊EC편차</th>
+                    <th>💧배액pH</th>
+                    <th>📏기준pH</th>
+                    <th>📊pH편차</th>
+                    <th>🧪샘플EC</th>
+                    <th>🧪샘플pH</th>
+                    <th>🌡️배지온도</th>
+                    <th>💧배액율</th>
+                    <th>✅상태</th>
                   </tr>
                 </thead>
                 <tbody id="reportBody">
-                  <tr><td colspan="13">날짜를 선택해주세요.</td></tr>
+                  <tr><td colspan="14">날짜를 선택해주세요.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -373,374 +171,7 @@
     </div>
   </div>
   <div class="overlay" id="overlay"></div>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
-  const firebaseConfig = {
-    apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
-    authDomain: "smartfarm-drainage-system.firebaseapp.com",
-    projectId: "smartfarm-drainage-system",
-    storageBucket: "smartfarm-drainage-system.firebasestorage.app",
-    messagingSenderId: "699907108321",
-    appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
-    measurementId: "G-W7L21Y8JZN"
-  };
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const FARM_SETTINGS_ID = "current";
-  let zoneList = [];
-  let standards = [];
-  let allRecords = [];
-  let currentFilter = "all";
-  let deviationChart = null;
-  let warningChart = null;
-
-  function getRoleName(role) {
-    const map = { admin:"최고관리자", manager:"매니저", worker:"공공근로자", guest:"게스트" };
-    return map[role] || role;
-  }
-  function applyMenuPermissions(userRole) {
-    document.querySelectorAll(".sidebar-menu a").forEach(link => {
-      const allowedRoles = (link.dataset.role || "all").split(",");
-      if (allowedRoles.includes("all") || allowedRoles.includes(userRole)) {
-        link.classList.add("visible");
-      } else {
-        link.classList.remove("visible");
-      }
-    });
-  }
-  function formatDateYmd(dateStr) {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }
-  async function loadFarmInfo() {
-    try {
-      const snap = await getDoc(doc(db, "settings", FARM_SETTINGS_ID));
-      const topFarmNameEl = document.getElementById("topFarmName");
-      const topMetaEl = document.getElementById("topFarmMeta");
-      if (snap.exists()) {
-        const farm = snap.data();
-        topFarmNameEl.textContent = farm.farmName || "강북구 스마트팜 재배단지";
-        topMetaEl.innerHTML = `
-          <span>🌿 재배작물: ${farm.cropType || "딸기"}</span>
-          <span>🍓 품종: ${farm.variety || "금실"}</span>
-          <span>🌱 정식일: ${formatDateYmd(farm.plantingDate)}</span>
-        `;
-      } else {
-        topFarmNameEl.textContent = "강북구 스마트팜 재배단지";
-        topMetaEl.innerHTML = `<span style="color:#ffd700;">⚠️ 농장설정 미등록</span>`;
-      }
-    } catch (e) { 
-      document.getElementById("topFarmName").textContent = "강북구 스마트팜 재배단지";
-      document.getElementById("topFarmMeta").innerHTML = `<span style="color:red;">정보 불러오기 오류</span>`;
-    }
-  }
-  function checkStatus(r) {
-    const std = standards.filter(s => 
-      s.standardDate <= r.measureDate && (s.line || "V01") === (r.line || "V01")
-    ).sort((a,b) => b.standardDate.localeCompare(a.standardDate))[0];
-    if (!std) return { level:"none", ecDev:"-", phDev:"-", supEc:"-", supPh:"-", statusText:"기준없음", statusColor:"#888" };
-    const drainEc = parseFloat(r.drainEc);
-    const drainPh = parseFloat(r.drainPh);
-    const supEc = parseFloat(std.supplyEc) || 0;
-    const supPh = parseFloat(std.supplyPh) || 0;
-    const compEc = supEc + 0.2;
-    const ecDev = (drainEc - compEc).toFixed(2);
-    const phDev = (drainPh - supPh).toFixed(2);
-    const eD = parseFloat(ecDev);
-    const pD = parseFloat(phDev);
-    let ecLevel = "ok";
-    if (eD >= 0.7 || eD <= -0.5) ecLevel = "danger";
-    else if ((eD >= 0.4 && eD <= 0.6) || (eD <= -0.31 && eD >= -0.4)) ecLevel = "warn";
-    let phLevel = "ok";
-    if (pD >= 0.9 || pD <= -0.7 || drainPh >= 6.8 || drainPh <= 5.2) phLevel = "danger";
-    else if ((pD >= 0.5 && pD <= 0.8) || (pD <= -0.41 && pD >= -0.6)) phLevel = "warn";
-    let level = "ok";
-    if (ecLevel === "danger" || phLevel === "danger") level = "danger";
-    else if (ecLevel === "warn" || phLevel === "warn") level = "warn";
-    return {
-      level, ecDev, phDev, supEc: std.supplyEc, supPh: std.supplyPh,
-      statusText: level === "danger" ? "🚨 경고" : level === "warn" ? "⚠️ 주의" : "✅ 정상",
-      statusColor: level === "danger" ? "#c62828" : level === "warn" ? "#ef6c00" : "#2e7d32"
-    };
-  }
-  function zoneCompare(a, b) {
-    const ax = String(a.zoneName || "");
-    const bx = String(b.zoneName || "");
-    const aIsNum = /^[0-9]/.test(ax);
-    const bIsNum = /^[0-9]/.test(bx);
-    if (aIsNum && !bIsNum) return -1;
-    if (!aIsNum && bIsNum) return 1;
-    if (aIsNum && bIsNum) {
-      const aNumMatch = ax.match(/(\d+)/);
-      const bNumMatch = bx.match(/(\d+)/);
-      if (aNumMatch && bNumMatch) {
-        const aNum = parseInt(aNumMatch[1],10);
-        const bNum = parseInt(bNumMatch[1],10);
-        if (aNum !== bNum) return aNum - bNum;
-      }
-    }
-    return ax.localeCompare(bx, "ko");
-  }
-  function checkAuth() {
-    const user = JSON.parse(localStorage.getItem("user") || "null");
-    const userRole = localStorage.getItem("userRole") || "";
-    if (!user || !user.userId || !userRole) {
-      location.href = "index.html";
-      return null;
-    }
-    const userName = user.userName || user.userId || "사용자";
-    document.getElementById("sidebarUserName").textContent = `${userName} ${getRoleName(userRole)}`;
-    applyMenuPermissions(userRole);
-    document.getElementById("adminArea").style.display = "block";
-    return { user, userRole };
-  }
-  function doLogout() {
-    if (confirm("로그아웃 하시겠습니까?")) {
-      localStorage.removeItem("user");
-      localStorage.removeItem("userRole");
-      location.href = "index.html";
-    }
-  }
-  document.addEventListener("click", e => {
-    if (e.target.id === "hamBtn" || e.target.closest("#hamBtn")) {
-      document.getElementById("sidebar").classList.toggle("open");
-      document.getElementById("overlay").classList.toggle("show");
-    }
-    if (e.target.id === "sidebarLogoutBtn" || e.target.closest("#sidebarLogoutBtn")) {
-      e.preventDefault();
-      doLogout();
-    }
-  });
-  async function loadWeather() {
-    try {
-      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.63&longitude=127.03&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=1");
-      const data = await res.json();
-      const temp = Math.round(data.current.temperature_2m * 10) / 10;
-      const minTemp = Math.round(data.daily.temperature_2m_min[0]);
-      const maxTemp = Math.round(data.daily.temperature_2m_max[0]);
-      const code = data.current.weather_code;
-      let icon = "☀️", desc = "맑음";
-      if (code === 1 || code === 2) { icon = "🌤️"; desc = "구름조금"; }
-      else if (code === 3) { icon = "☁️"; desc = "흐림"; }
-      else if (code >= 45 && code <= 48) { icon = "🌫️"; desc = "안개"; }
-      else if (code >= 51 && code <= 67) { icon = "🌧️"; desc = "비"; }
-      else if (code >= 71 && code <= 77) { icon = "❄️"; desc = "눈"; }
-      else if (code >= 80 && code <= 82) { icon = "🌧️"; desc = "소나기"; }
-      const elIcon = document.getElementById("weatherIcon");
-      const elTemp = document.getElementById("weatherTemp");
-      const elDesc = document.getElementById("weatherDesc");
-      const elRange = document.getElementById("weatherRange");
-      if(elIcon) elIcon.textContent = icon;
-      if(elTemp) elTemp.textContent = `${temp}°`;
-      if(elDesc) elDesc.textContent = desc;
-      if(elRange) elRange.textContent = `최저 ${minTemp}° / 최고 ${maxTemp}°`;
-    } catch(e) {
-      const elDesc = document.getElementById("weatherDesc");
-      if(elDesc) elDesc.textContent = "날씨 불러오기 실패";
-    }
-  }
-  function renderDeviationChart() {
-    let filtered = allRecords;
-    if (currentFilter === "ok") filtered = allRecords.filter(r => checkStatus(r).level === "ok");
-    else if (currentFilter === "warn") filtered = allRecords.filter(r => checkStatus(r).level === "warn");
-    else if (currentFilter === "danger") filtered = allRecords.filter(r => checkStatus(r).level === "danger");
-    if (!filtered.length) {
-      if (deviationChart) deviationChart.destroy();
-      deviationChart = null;
-      return;
-    }
-    const byDate = {};
-    filtered.forEach(r => {
-      const d = r.measureDate;
-      if (!byDate[d]) byDate[d] = { ecSum:0, phSum:0, cnt:0 };
-      const st = checkStatus(r);
-      if (st.ecDev !== "-") {
-        byDate[d].ecSum += parseFloat(st.ecDev);
-        byDate[d].phSum += parseFloat(st.phDev);
-        byDate[d].cnt += 1;
-      }
-    });
-    const dates = Object.keys(byDate).sort((a,b)=>a.localeCompare(b));
-    const ecAvgs = dates.map(d => (byDate[d].ecSum / byDate[d].cnt).toFixed(2));
-    const phAvgs = dates.map(d => (byDate[d].phSum / byDate[d].cnt).toFixed(2));
-    const ctx = document.getElementById("deviationChart").getContext("2d");
-    if (deviationChart) deviationChart.destroy();
-    deviationChart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: dates.map(d => d.slice(5)),
-        datasets: [
-          { label:"EC 편차", data:ecAvgs, borderColor:"#1976d2", backgroundColor:"rgba(25,118,210,0.08)", borderWidth:2.5, tension:0.3, fill:false, pointRadius:4, pointBackgroundColor:"#1976d2" },
-          { label:"pH 편차", data:phAvgs, borderColor:"#388e3c", backgroundColor:"rgba(56,142,60,0.08)", borderWidth:2.5, tension:0.3, fill:false, pointRadius:4, pointBackgroundColor:"#388e3c" }
-        ]
-      },
-      options: {
-        responsive:true, maintainAspectRatio:false,
-        plugins: { legend:{ position:"top", labels:{ usePointStyle:true, boxWidth:6, font:{size:11} } }, tooltip:{ backgroundColor:"#222", padding:10, titleFont:{size:12}, bodyFont:{size:12} } },
-        scales: {
-          y: { title:{ display:true, text:"평균 편차", font:{size:11} }, grid:{ color:"#e8e8e8", borderDash: ctx => ctx.tick.value===0 ? [5,5] : undefined }, ticks:{ font:{size:11} }, border:{ dash:[5,5] } },
-          x: { grid:{ display:false }, ticks:{ font:{size:11} } }
-        },
-        interaction: { mode:"index", intersect:false }
-      }
-    });
-  }
-  function renderWarningChart() {
-    let filtered = allRecords;
-    if (currentFilter === "ok") filtered = [];
-    else if (currentFilter === "warn") filtered = allRecords.filter(r => checkStatus(r).level === "warn");
-    else if (currentFilter === "danger") filtered = allRecords.filter(r => checkStatus(r).level === "danger");
-    const byDate = {};
-    allRecords.forEach(r => {
-      const d = r.measureDate;
-      if (!byDate[d]) byDate[d] = { warn:0, danger:0 };
-      const level = checkStatus(r).level;
-      if (level === "warn") byDate[d].warn += 1;
-      else if (level === "danger") byDate[d].danger += 1;
-    });
-    const dates = Object.keys(byDate).sort((a,b)=>a.localeCompare(b));
-    const warnData = dates.map(d => byDate[d].warn);
-    const dangerData = dates.map(d => byDate[d].danger);
-    const ctx = document.getElementById("warningChart").getContext("2d");
-    if (warningChart) warningChart.destroy();
-    warningChart = new Chart(ctx, {
-      type:"bar",
-      data: {
-        labels: dates.map(d => d.slice(5)),
-        datasets: [
-          { label:"주의", data:warnData, backgroundColor:"#ffcc00", borderRadius:3 },
-          { label:"경고", data:dangerData, backgroundColor:"#e53935", borderRadius:3 }
-        ]
-      },
-      options: {
-        responsive:true, maintainAspectRatio:false,
-        plugins: { legend:{ position:"top", labels:{ usePointStyle:true, boxWidth:6, font:{size:11} } }, tooltip:{ backgroundColor:"#222", padding:10, titleFont:{size:12}, bodyFont:{size:12} } },
-        scales: {
-          y: { title:{ display:true, text:"건수", font:{size:11} }, beginAtZero:true, ticks:{ font:{size:11}, stepSize:1 } },
-          x: { grid:{ display:false }, ticks:{ font:{size:11} } }
-        }
-      }
-    });
-  }
-  window.onload = async () => {
-    const auth = checkAuth();
-    if (!auth) return;
-    await loadFarmInfo();
-    loadWeather();
-    const t = new Date();
-    document.getElementById("eDate").valueAsDate = t;
-    const startDate = new Date(t);
-    startDate.setDate(t.getDate() - 6);
-    document.getElementById("sDate").valueAsDate = startDate;
-    const zSnap = await getDocs(collection(db, "zones"));
-    zoneList = zSnap.docs.map(d => ({id:d.id, ...d.data()})).sort(zoneCompare);
-    const sel = document.getElementById("zoneSel");
-    zoneList.forEach(z => sel.innerHTML += `<option value="${z.zoneName}">${z.zoneName}</option>`);
-    const sSnap = await getDocs(collection(db, "supply_standards"));
-    standards = sSnap.docs.map(d => d.data());
-    applyFilter();
-  };
-  window.setFilter = function(level) {
-    currentFilter = level;
-    document.querySelectorAll(".status-filter-box button").forEach(btn => btn.classList.remove("active"));
-    document.querySelector(`button[data-filter="${level}"]`).classList.add("active");
-    renderList();
-    renderDeviationChart();
-    renderWarningChart();
-  };
-  window.applyFilter = async function() {
-    const s = document.getElementById("sDate").value;
-    const e = document.getElementById("eDate").value;
-    const z = document.getElementById("zoneSel").value;
-    const snap = await getDocs(collection(db, "drain_records"));
-    allRecords = snap.docs.map(d => ({id:d.id, ...d.data()}));
-    if(s) allRecords = allRecords.filter(r => r.measureDate >= s);
-    if(e) allRecords = allRecords.filter(r => r.measureDate <= e);
-    if(z) allRecords = allRecords.filter(r => r.zoneName === z);
-    allRecords.sort((a,b) => {
-      const dCmp = String(a.measureDate||"").localeCompare(String(b.measureDate||""));
-      if(dCmp !== 0) return dCmp;
-      const ax = String(a.zoneName||"");
-      const bx = String(b.zoneName||"");
-      const aIsNum = /^[0-9]/.test(ax);
-      const bIsNum = /^[0-9]/.test(bx);
-      if (aIsNum && !bIsNum) return -1;
-      if (!aIsNum && bIsNum) return 1;
-      if (aIsNum && bIsNum) {
-        const aNumMatch = ax.match(/(\d+)/);
-        const bNumMatch = bx.match(/(\d+)/);
-        if (aNumMatch && bNumMatch) {
-          const an = parseInt(aNumMatch[1],10);
-          const bn = parseInt(bNumMatch[1],10);
-          if (an !== bn) return an - bn;
-        }
-      }
-      const zCmp = ax.localeCompare(bx, "ko");
-      if(zCmp !== 0) return zCmp;
-      return String(a.measureTime||"").localeCompare(String(b.measureTime||""));
-    });
-    const cntAll = allRecords.length;
-    let cntOk=0, cntWarn=0, cntDanger=0;
-    allRecords.forEach(r => {
-      const st = checkStatus(r);
-      if(st.level === "danger") cntDanger++;
-      else if(st.level === "warn") cntWarn++;
-      else cntOk++;
-    });
-    document.getElementById("fAll").textContent = cntAll;
-    document.getElementById("fOk").textContent = cntOk;
-    document.getElementById("fWarn").textContent = cntWarn;
-    document.getElementById("fDanger").textContent = cntDanger;
-    let ecDevSum=0, sEcDevSum=0, ecDevCnt=0, sEcDevCnt=0;
-    allRecords.forEach(r => {
-      const st = checkStatus(r);
-      if(st.ecDev !== "-") { ecDevSum += Math.abs(parseFloat(st.ecDev)); ecDevCnt++; }
-      if(r.sampleEc && st.supEc !== "-") {
-        sEcDevSum += Math.abs(parseFloat(r.sampleEc) - (parseFloat(st.supEc)+0.2));
-        sEcDevCnt++;
-      }
-    });
-    document.getElementById("aCount").textContent = cntAll + "건";
-    document.getElementById("ecDev").textContent = ecDevCnt ? (ecDevSum/ecDevCnt).toFixed(2) : "-";
-    document.getElementById("sEcDev").textContent = sEcDevCnt ? (sEcDevSum/sEcDevCnt).toFixed(2) : "-";
-    document.getElementById("wCount").textContent = (cntWarn + cntDanger) + "건";
-    renderList();
-    renderDeviationChart();
-    renderWarningChart();
-  };
-  function renderList() {
-    let filtered = allRecords;
-    if (currentFilter === "ok") filtered = allRecords.filter(r => checkStatus(r).level === "ok");
-    else if (currentFilter === "warn") filtered = allRecords.filter(r => checkStatus(r).level === "warn");
-    else if (currentFilter === "danger") filtered = allRecords.filter(r => checkStatus(r).level === "danger");
-    const tb = document.getElementById("reportBody");
-    if(!filtered.length){ tb.innerHTML = `<tr><td colspan="13">데이터가 없습니다.</td></tr>`; return; }
-    tb.innerHTML = filtered.map(r => {
-      const st = checkStatus(r);
-      let rowClass = "";
-      if (st.level === "danger") rowClass = "class='danger-row'";
-      else if (st.level === "warn") rowClass = "class='warn-row'";
-      const zoneLine = `${r.zoneName||"-"} · ${r.line||"V01"}`;
-      return `<tr ${rowClass}>
-        <td>${r.measureDate}</td>
-        <td>${r.measureTime}</td>
-        <td>${zoneLine}</td>
-        <td>${r.drainEc}</td>
-        <td>${st.supEc}</td>
-        <td style="color:${st.statusColor}; font-weight:bold;">${st.ecDev}</td>
-        <td>${r.drainPh}</td>
-        <td>${st.supPh}</td>
-        <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
-        <td>${r.sampleEc||"-"}</td>
-        <td>${r.samplePh||"-"}</td>
-        <td>${r.bedTemp||"-"}</td>
-        <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
-      </tr>`;
-    }).join("");
-  }
-</script>
+<script src="common.js?v=20260919" defer></script>
+<script src="assets/js/pages/analysis-report.js?v=20260919" defer></script>
 </body>
 </html>
