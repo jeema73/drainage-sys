@@ -599,3 +599,55 @@ td {
 
 /* 포커스 접근성 */
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #2F5D3A; outline-offset: 2px; }
+
+/* =====================================================
+   ✅ 모바일 2열 레이아웃 수정팩 (v260921)
+   ===================================================== */
+
+/* 1) 입력폼(form-grid): 모바일에서도 한 줄에 2항목 유지 */
+@media (max-width: 480px) {
+  .form-grid, #adminArea .form-grid {
+    grid-template-columns: 65px 1fr 65px 1fr;
+    gap: 6px 8px;
+  }
+  .form-grid label, #adminArea .form-grid label {
+    font-size: 9.5px;
+    padding-right: 4px;
+    white-space: nowrap;
+  }
+  .form-grid input, .form-grid select, .form-grid textarea,
+  #adminArea .form-grid input, #adminArea .form-grid select, #adminArea .form-grid textarea {
+    font-size: 10.5px;
+    padding: 5px 6px;
+    height: 28px;
+  }
+  .form-grid .full, #adminArea .form-grid .full { grid-column: 2 / -1; }
+}
+
+/* 2) 배액기록 조회조건(search-row): PC 4열 → 모바일 2열 */
+.form-row.search-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  align-items: end;
+}
+.form-row.search-row > div {
+  min-width: 0;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.form-row.search-row label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.form-row.search-row input,
+.form-row.search-row select {
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 900px) {
+  .form-row.search-row { grid-template-columns: repeat(2, 1fr); }
+}
