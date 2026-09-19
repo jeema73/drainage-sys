@@ -502,6 +502,10 @@
     applyFilter();
   }
 
+  // ✅ HTML 인라인 onclick용 전역 노출
+  window.setFilter = setFilter;
+  window.applyFilter = applyFilter;
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {

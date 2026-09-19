@@ -94,7 +94,7 @@
               <input type="date" id="sDate">
               <span>~</span>
               <input type="date" id="eDate">
-              <span>구역:</span>
+              <span></span>
               <select id="zoneSel" onchange="applyFilter()">
                 <option value="">전체 구역</option>
               </select>
@@ -105,7 +105,7 @@
               <button class="warn-btn" data-filter="warn" onclick="setFilter('warn')">주의 <span id="fWarn">0</span></button>
               <button class="danger-btn" data-filter="danger" onclick="setFilter('danger')">경고 <span id="fDanger">0</span></button>
             </div>
-            <p class="small-font">
+            <p style="margin:0; font-size:9.5px; color:#868806;">
               ※ EC: 기준+0.2와 비교 / pH: 기준값과 직접 비교<br>
               ⚠️ 주의: EC +0.4~+0.6 또는 -0.31~-0.4 / pH +0.5~+0.8 또는 -0.41~-0.6<br>
               🚨 경고: EC +0.7↑ 또는 -0.5↓ / pH +0.9↑ 또는 -0.7↓ 또는 pH 6.8↑ 또는 5.2↓

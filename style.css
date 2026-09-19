@@ -600,11 +600,35 @@ td {
 /* 포커스 접근성 */
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #2F5D3A; outline-offset: 2px; }
 
-/* =====================================================
-   ✅ 모바일 2열 레이아웃 수정팩 (v260921)
-   ===================================================== */
 
-/* 1) 입력폼(form-grid): 모바일에서도 한 줄에 2항목 유지 */
+/* =====================================================
+   ✅ 복구팩 v260922 (맨 아래에 추가)
+   ===================================================== */
+/* 1) 표 안의 액션 버튼 = 소형 */
+.btn-sm {
+  padding: 3px 9px !important;
+  font-size: 10px !important;
+  border-radius: 4px !important;
+  margin-left: 3px;
+  line-height: 1.2;
+}
+
+/* 2) 관리자 페이지 테이블 = 좁은 화면에서 가로 스크롤 */
+#adminArea .card { overflow-x: auto; }
+
+/* 3) 대시보드 4열 통계 그리드 */
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+.grid-4 .stat-card { margin: 0; width: 100%; }
+@media (max-width: 900px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* 4) 모바일 입력폼 2열 유지 */
 @media (max-width: 480px) {
   .form-grid, #adminArea .form-grid {
     grid-template-columns: 65px 1fr 65px 1fr;
@@ -613,7 +637,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .form-grid label, #adminArea .form-grid label {
     font-size: 9.5px;
     padding-right: 4px;
-    white-space: nowrap;
   }
   .form-grid input, .form-grid select, .form-grid textarea,
   #adminArea .form-grid input, #adminArea .form-grid select, #adminArea .form-grid textarea {
@@ -624,7 +647,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .form-grid .full, #adminArea .form-grid .full { grid-column: 2 / -1; }
 }
 
-/* 2) 배액기록 조회조건(search-row): PC 4열 → 모바일 2열 */
+/* 5) 조회조건(search-row) 4열 → 모바일 2열 */
 .form-row.search-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -638,16 +661,72 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   flex-direction: column;
   gap: 4px;
 }
-.form-row.search-row label {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-soft);
-}
-.form-row.search-row input,
-.form-row.search-row select {
-  width: 100%;
-  box-sizing: border-box;
-}
 @media (max-width: 900px) {
   .form-row.search-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* =====================================================
+   ✅ 폼 그리드 넘침 방지 (input 최소폭 허용) v260923
+   ===================================================== */
+.form-grid, #adminArea .form-grid {
+  grid-template-columns: 80px minmax(0, 1fr) 80px minmax(0, 1fr);
+}
+.form-grid input, .form-grid select, .form-grid textarea,
+#adminArea .form-grid input, #adminArea .form-grid select, #adminArea .form-grid textarea {
+  min-width: 0;
+  width: 100%;
+}
+
+/* 조회조건(search-row)도 동일 처리 */
+.form-row.search-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.form-row.search-row input,
+.form-row.search-row select { min-width: 0; width: 100%; }
+
+@media (max-width: 900px) {
+  .form-row.search-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 768px) {
+  .form-grid, #adminArea .form-grid {
+    grid-template-columns: 70px minmax(0, 1fr) 70px minmax(0, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .form-grid, #adminArea .form-grid {
+    grid-template-columns: 62px minmax(0, 1fr) 62px minmax(0, 1fr);
+    gap: 6px 6px;
+  }
+  .form-grid label, #adminArea .form-grid label {
+    font-size: 9.5px;
+    padding-right: 3px;
+  }
+  .form-grid input, .form-grid select, .form-grid textarea,
+  #adminArea .form-grid input, #adminArea .form-grid select, #adminArea .form-grid textarea {
+    font-size: 10.5px;
+    padding: 5px 6px;
+    height: 28px;
+  }
+}
+
+/* =====================================================
+   ✅ 모바일 관리자 테이블 컴팩트 (가로 스크롤 제거) v260924
+   ===================================================== */
+@media (max-width: 480px) {
+  #adminArea .card table th,
+  #adminArea .card table td {
+    padding: 4px 3px;
+    font-size: 9.5px;
+    white-space: normal;
+    word-break: keep-all;
+  }
+  #adminArea .card table .btn-sm {
+    padding: 2px 6px !important;
+    font-size: 9px !important;
+    margin-left: 2px;
+  }
+  #adminArea .card table input[type="checkbox"] {
+    width: 13px;
+    height: 13px;
+  }
 }

@@ -88,32 +88,25 @@
             <h2>📍 구역 관리</h2>
             <p>재배 구역을 등록하고 관리합니다.</p>
           </div>
-          <!-- ✅ 등록/수정 폼 → 구역명·양액라인·체크박스 한 줄에 -->
+          <!-- ✅ 구역 등록 -->
           <div class="card daily-input-box">
             <h3 id="formTitle">➕ 구역 등록</h3>
             <input type="hidden" id="editId">
-            <div class="form-row">
-              <label>구역명 <span style="color:red">*</span></label>
-              <input type="text" id="zoneName" placeholder="예: 1구역, 1번라인">
+            <div class="form-grid">
+              <label>구역명 *</label><input type="text" id="zoneName" placeholder="예: 1구역, 1번라인">
               <label>양액라인</label>
               <select id="line">
                 <option value="V01" selected>V01</option>
                 <option value="V02">V02</option>
                 <option value="V03">V03</option>
-                <option value="V04">V04</option>
-                <option value="V05">V05</option>
               </select>
-              <label class="checkbox-wrap">
-                <input type="checkbox" id="hasSampleData">
-                샘플/배액량 사용
-              </label>
-            </div>
-            <div class="form-row">
+              <label>샘플/배액량</label>
+              <label class="checkbox-wrap"><input type="checkbox" id="hasSampleData"> 사용</label>
               <label>비고</label>
-              <input type="text" id="remark" placeholder="위치, 면적 등 참고사항" class="full-width">
+              <textarea id="remark" class="full" placeholder="위치, 면적 등 참고사항"></textarea>
             </div>
             <div class="form-btn-row">
-              <button class="btn-primary" onclick="resetForm()">↺ 초기화</button>
+              <button class="btn-secondary" onclick="resetForm()">↺ 초기화</button>
               <button class="btn-primary" onclick="saveZone()">💾 저장</button>
             </div>
           </div>

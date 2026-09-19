@@ -94,6 +94,10 @@
 
           <div class="daily-input-box">
             <div class="date-row">
+              <span></span>
+              <input type="date" id="sDate">
+              <span>~</span>
+              <input type="date" id="eDate">
               <select id="datePreset" onchange="setPreset()">
                 <option value="weekday">이번 주(월~금)</option>
                 <option value="week">이번 주(월~일)</option>
@@ -101,10 +105,6 @@
                 <option value="month3">최근 3개월</option>
                 <option value="custom">직접입력</option>
               </select>
-              <span>시작:</span>
-              <input type="date" id="sDate">
-              <span>~ 종료:</span>
-              <input type="date" id="eDate">
             </div>
             <div class="info-row">
               <span>📊 측정기록: <strong id="totalCount">0</strong>건</span>
