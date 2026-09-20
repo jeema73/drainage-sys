@@ -92,16 +92,17 @@
           <div class="card daily-input-box">
             <h3 id="formTitle">➕ 구역 등록</h3>
             <input type="hidden" id="editId">
-            <div class="form-grid">
+            <div class="form-grid zone-form">
               <label>구역명 *</label><input type="text" id="zoneName" placeholder="예: 1구역, 1번라인">
               <label>양액라인</label>
               <select id="line">
                 <option value="V01" selected>V01</option>
                 <option value="V02">V02</option>
                 <option value="V03">V03</option>
+                <option value="V04">V04</option>
+                <option value="V05">V05</option>
               </select>
-              <label>샘플/배액량</label>
-              <label class="checkbox-wrap"><input type="checkbox" id="hasSampleData"> 사용</label>
+              <label class="checkbox-wrap"><input type="checkbox" id="hasSampleData"> 샘플/배액량</label>
               <label>비고</label>
               <textarea id="remark" class="full" placeholder="위치, 면적 등 참고사항"></textarea>
             </div>
