@@ -450,7 +450,7 @@
     document.getElementById("bedTemp").value = r.bedTemp ?? "";
     document.getElementById("sampleEc").value = r.sampleEc ?? "";
     document.getElementById("samplePh").value = r.samplePh ?? "";
-    document.getElementById("samplePh").value = r.bedTemp ?? "";
+    document.getElementById("bedTemp").value = r.bedTemp ?? "";
     document.getElementById("drainAmount").value = r.drainAmount ?? "";
     document.getElementById("supplyEvents").value = r.supplyEvents ?? "";
 
