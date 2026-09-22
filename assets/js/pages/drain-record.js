@@ -322,7 +322,7 @@
     } catch (e) {
       console.error("기록 불러오기 오류:", e);
       const tb = document.getElementById("listBody");
-      if (tb) tb.innerHTML = `<tr><td colspan="15" class="empty-box">오류: ${e.message}</td></tr>`;
+      if (tb) tb.innerHTML = `<tr><td colspan="16" class="empty-box">오류: ${e.message}</td></tr>`;
     }
   }
 
@@ -331,7 +331,7 @@
     if (!tb) return;
 
     if (!lastRecords.length) {
-      tb.innerHTML = `<tr><td colspan="15" class="empty-box">해당 기간에 기록이 없습니다.</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="16" class="empty-box">해당 기간에 기록이 없습니다.</td></tr>`;
       return;
     }
 
@@ -362,6 +362,7 @@
         <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
         <td>${r.sampleEc || "-"}</td>
         <td>${r.samplePh || "-"}</td>
+        <td>${r.bedTemp != null && r.bedTemp !== "" ? r.bedTemp + "℃" : "-"}</t
         <td>${r.drainAmount || "-"}</td>
         <td>${ratioCell}</td>
         <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
@@ -447,7 +448,6 @@
 
     document.getElementById("drainEc").value = r.drainEc ?? "";
     document.getElementById("drainPh").value = r.drainPh ?? "";
-    document.getElementById("bedTemp").value = r.bedTemp ?? "";
     document.getElementById("sampleEc").value = r.sampleEc ?? "";
     document.getElementById("samplePh").value = r.samplePh ?? "";
     document.getElementById("bedTemp").value = r.bedTemp ?? "";
