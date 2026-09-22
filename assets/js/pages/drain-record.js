@@ -326,54 +326,55 @@
     }
   }
 
-  function renderList() {
-    const tb = document.getElementById("listBody");
-    if (!tb) return;
+function renderList() {
+  const tb = document.getElementById("listBody");
+  if (!tb) return;
 
-    if (!lastRecords.length) {
-      tb.innerHTML = `<tr><td colspan="16" class="empty-box">해당 기간에 기록이 없습니다.</td></tr>`;
-      return;
-    }
-
-    const editOk = canEdit();
-    const apprOk = canApprove();
-
-    tb.innerHTML = lastRecords.map(r => {
-      const st = checkStatus(r);
-      let rowClass = "";
-      if (st.level === "danger") rowClass = "class='danger-row'";
-      else if (st.level === "warn") rowClass = "class='warn-row'";
-
-      const isApproved = r.approved === true;
-      const zoneLine = `${r.zoneName || "-"} · ${r.line || "V01"}`;
-      const ratioCell = st.ratio == null
-        ? `<span style="color:#999;">-</span>`
-        : `<span style="color:${st.ratioColor};font-weight:bold;" title="공급 ${r.supplyEvents || "-"}회 기준">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
-
-      return `<tr ${rowClass}>
-        <td>${r.measureDate || "-"}</td>
-        <td>${r.measureTime || "-"}</td>
-        <td>${zoneLine}</td>
-        <td>${r.drainEc || "-"}</td>
-        <td>${st.supEc}</td>
-        <td style="color:${st.statusColor}; font-weight:bold;">${st.ecDev}</td>
-        <td>${r.drainPh || "-"}</td>
-        <td>${st.supPh}</td>
-        <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
-        <td>${r.sampleEc || "-"}</td>
-        <td>${r.samplePh || "-"}</td>
-        <td>${r.bedTemp != null && r.bedTemp !== "" ? r.bedTemp + "℃" : "-"}</t
-        <td>${r.drainAmount || "-"}</td>
-        <td>${ratioCell}</td>
-        <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
-        <td class="action-btns">
-          <button class="btn-sm btn-primary" onclick="editRec('${r.id}')" ${editOk ? "" : "disabled"}>수정</button>
-          <button class="btn-sm btn-secondary" onclick="toggleApprove('${r.id}', ${isApproved})" ${apprOk ? "" : "disabled"}>${isApproved ? "승인취소" : "승인"}</button>
-          <button class="btn-sm btn-danger" onclick="deleteRec('${r.id}')" ${apprOk ? "" : "disabled"}>삭제</button>
-        </td>
-      </tr>`;
-    }).join("");
+  if (!lastRecords.length) {
+    tb.innerHTML = `<tr><td colspan="15" class="empty-box">해당 기간에 기록이 없습니다.</td></tr>`;
+    return;
   }
+
+  const editOk = canEdit();
+  const apprOk = canApprove();
+
+  tb.innerHTML = lastRecords.map(r => {
+    const st = checkStatus(r);
+    let rowClass = "";
+    if (st.level === "danger") rowClass = "class='danger-row'";
+    else if (st.level === "warn") rowClass = "class='warn-row'";
+
+    const isApproved = r.approved === true;
+    const zoneLine = `${r.zoneName || "-"} · ${r.line || "V01"}`;
+    
+    const ratioCell = st.ratio == null
+      ? `<span style="color:#999;">-</span>`
+      : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
+
+    return `<tr ${rowClass}>
+      <td>${r.measureDate || "-"}</td>
+      <td>${r.measureTime || "-"}</td>
+      <td>${zoneLine}</td>
+      <td>${r.drainEc || "-"}</td>
+      <td>${st.supEc}</td>
+      <td style="color:${st.statusColor}; font-weight:bold;">${st.ecDev}</td>
+      <td>${r.drainPh || "-"}</td>
+      <td>${st.supPh}</td>
+      <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
+      <td>${r.sampleEc || "-"}</td>
+      <td>${r.samplePh || "-"}</td>
+      <td>${r.bedTemp != null ? r.bedTemp + "℃" : "-"}</td>
+      <td>${r.drainAmount || "-"}</td>
+      <td>${ratioCell}</td>
+      <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
+      <td class="action-btns">
+        <button class="btn-sm btn-primary" onclick="editRec('${r.id}')" ${editOk ? "" : "disabled"}>수정</button>
+        <button class="btn-sm btn-secondary" onclick="toggleApprove('${r.id}', ${isApproved})" ${apprOk ? "" : "disabled"}>${isApproved ? "승인취소" : "승인"}</button>
+        <button class="btn-sm btn-danger" onclick="deleteRec('${r.id}')" ${apprOk ? "" : "disabled"}>삭제</button>
+      </td>
+    </tr>`;
+  }).join("");
+}
 
   async function saveRecord() {
     if (!canEdit()) return alert("등록/수정 권한이 없습니다.");
