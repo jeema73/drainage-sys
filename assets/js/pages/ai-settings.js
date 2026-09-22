@@ -318,6 +318,7 @@
     }).join("");
   }
 
+// ✅ 연결 테스트 함수 (Groq 및 범용 API 지원)
   async function testConnection(aiId) {
     const ai = aiList.find(x => x.id === aiId);
     if (!ai) return alert("AI 정보를 찾을 수 없습니다.");
@@ -330,11 +331,12 @@
       const model = ai.modelName || "gemini-3.6-flash";
       const endpoint = (ai.apiEndpoint || DEFAULT_ENDPOINT).trim();
 
-      let url = endpoint;
-      if (!url.endsWith("/")) url += "/";
-
+      // 1. Google Gemini 전용 처리
       if (endpoint.includes("generativelanguage.googleapis.com")) {
+        let url = endpoint;
+        if (!url.endsWith("/")) url += "/";
         url += `${model}:generateContent?key=${apiKey}`;
+
         const res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -343,48 +345,34 @@
             generationConfig: { maxOutputTokens: 5 }
           })
         });
+
         if (res.ok) {
           testStatus[aiId] = { text: "✅ 연결성공", class: "status-ok" };
         } else {
           const err = await res.json();
           throw new Error(err.error?.message || `오류 ${res.status}`);
         }
-      }
-      else if (endpoint.includes("api.openai.com")) {
-        url += "chat/completions";
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-          body: JSON.stringify({ model, messages: [{ role: "user", content: "안녕" }], max_tokens: 5 })
-        });
-        if (res.ok) {
-          testStatus[aiId] = { text: "✅ 연결성공", class: "status-ok" };
-        } else {
-          const err = await res.json();
-          throw new Error(err.error?.message || `오류 ${res.status}`);
-        }
-      }
-      else if (endpoint.includes("dashscope.aliyuncs.com")) {
-        url += "chat/completions";
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-          body: JSON.stringify({ model, messages: [{ role: "user", content: "안녕" }], max_tokens: 5 })
-        });
-        if (res.ok) {
-          testStatus[aiId] = { text: "✅ 연결성공", class: "status-ok" };
-        } else {
-          const err = await res.json();
-          throw new Error(err.error?.message || err.message || `오류 ${res.status}`);
-        }
-      }
+      } 
+      // 2. Groq, OpenAI, Alibaba 등 OpenAI Compatible 규격 처리
       else {
-        url += "chat/completions";
-        const res = await fetch(url, {
+        let targetUrl = endpoint.replace(/\/+$/, ""); // 맨 뒤 슬래시 제거
+        if (!targetUrl.endsWith("/chat/completions")) {
+          targetUrl += "/chat/completions";
+        }
+
+        const res = await fetch(targetUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-          body: JSON.stringify({ model, messages: [{ role: "user", content: "안녕" }], max_tokens: 5 })
+          headers: { 
+            "Content-Type": "application/json", 
+            "Authorization": `Bearer ${apiKey}` 
+          },
+          body: JSON.stringify({ 
+            model: model, 
+            messages: [{ role: "user", content: "hi" }], 
+            max_tokens: 5 
+          })
         });
+
         if (res.ok) {
           testStatus[aiId] = { text: "✅ 연결성공", class: "status-ok" };
         } else {
@@ -395,7 +383,7 @@
     } catch (e) {
       testStatus[aiId] = { text: "❌ 실패", class: "status-fail" };
       if (e instanceof TypeError) {
-        alert("연결 실패: CORS/네트워크 오류\nAPI 서버가 브라우저 직접 호출을 거부했습니다.\n(키가 맞다면 서버 보안 정책입니다)");
+        alert("연결 실패: CORS/네트워크 오류\n브라우저에서 직접호출이 거부되었습니다.\n(Groq 등 일부 서비스는 보안을 위해 웹직접 호출을 차단합니다)");
       } else {
         alert(`연결 실패: ${e.message}\n\n💡 호출주소, API키, 모델명을 확인하세요.`);
       }
