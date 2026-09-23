@@ -385,46 +385,51 @@
     renderWarningChart();
   }
 
-  function renderList() {
-    let filtered = allRecords;
-    if (currentFilter === "ok") filtered = allRecords.filter(r => checkStatus(r).level === "ok");
-    else if (currentFilter === "warn") filtered = allRecords.filter(r => checkStatus(r).level === "warn");
-    else if (currentFilter === "danger") filtered = allRecords.filter(r => checkStatus(r).level === "danger");
+function renderList() {
+  let filtered = allRecords;
+  if (currentFilter === "ok") filtered = allRecords.filter(r => checkStatus(r).level === "ok");
+  else if (currentFilter === "warn") filtered = allRecords.filter(r => checkStatus(r).level === "warn");
+  else if (currentFilter === "danger") filtered = allRecords.filter(r => checkStatus(r).level === "danger");
 
-    const tb = document.getElementById("reportBody");
-    if (!tb) return;
+  const tb = document.getElementById("reportBody");
+  if (!tb) return;
 
-    if (!filtered.length) { 
-      tb.innerHTML = `<tr><td colspan="14" class="empty-box">데이터가 없습니다.</td></tr>`; // ✅ 13 -> 14
-      return; 
-    }
-
-    tb.innerHTML = filtered.map(r => {
-      const st = checkStatus(r);
-      let rowClass = "";
-      if (st.level === "danger") rowClass = "class='danger-row'";
-      else if (st.level === "warn") rowClass = "class='warn-row'";
-      
-      const zoneLine = `${r.zoneName || "-"} · ${r.line || "V01"}`;
-      
-      return `<tr ${rowClass}>
-        <td>${r.measureDate || "-"}</td>
-        <td>${r.measureTime || "-"}</td>
-        <td>${zoneLine}</td>
-        <td>${r.drainEc || "-"}</td>
-        <td>${st.supEc}</td>
-        <td style="color:${st.statusColor}; font-weight:bold;">${st.ecDev}</td>
-        <td>${r.drainPh || "-"}</td>
-        <td>${st.supPh}</td>
-        <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
-        <td>${r.sampleEc || "-"}</td>
-        <td>${r.samplePh || "-"}</td>
-        <td>${r.bedTemp || "-"}</td>
-        <td>${st.ratio == null ? `<span style="color:#999;">-</span>` : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`}</td>
-        <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
-      </tr>`;
-    }).join("");
+  if (!filtered.length) { 
+    tb.innerHTML = `<tr><td colspan="15" class="empty-box">데이터가 없습니다.</td></tr>`;
+    return; 
   }
+
+  tb.innerHTML = filtered.map(r => {
+    const st = checkStatus(r);
+    let rowClass = "";
+    if (st.level === "danger") rowClass = "class='danger-row'";
+    else if (st.level === "warn") rowClass = "class='warn-row'";
+    
+    const zoneLine = `${r.zoneName || "-"} · ${r.line || "V01"}`;
+    
+    const ratioCell = st.ratio == null
+      ? `<span style="color:#999;">-</span>`
+      : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
+
+    return `<tr ${rowClass}>
+      <td>${r.measureDate || "-"}</td>
+      <td>${r.measureTime || "-"}</td>
+      <td>${zoneLine}</td>
+      <td>${r.drainEc || "-"}</td>
+      <td>${st.supEc}</td>
+      <td style="color:${st.statusColor}; font-weight:bold;">${st.ecDev}</td>
+      <td>${r.drainPh || "-"}</td>
+      <td>${st.supPh}</td>
+      <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
+      <td>${r.sampleEc || "-"}</td>
+      <td>${r.samplePh || "-"}</td>
+      <td>${r.bedTemp != null ? r.bedTemp + "℃" : "-"}</td>
+      <td>${r.drainAmount || "-"}${r.supplyEvents ? ` <span style="font-size:9px;color:#888;">(${r.supplyEvents}회)</span>` : ""}</td>
+      <td>${ratioCell}</td>
+      <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
+    </tr>`;
+  }).join("");
+}
 
   function bindEvents() {
     document.addEventListener("click", e => {
