@@ -364,7 +364,7 @@ function renderList() {
       <td>${r.sampleEc || "-"}</td>
       <td>${r.samplePh || "-"}</td>
       <td>${r.bedTemp != null ? r.bedTemp + "℃" : "-"}</td>
-      <td>${r.drainAmount || "-"}</td>
+      <td>${r.drainAmount || "-"}${r.supplyEvents ? ` <span style="font-size:9px;color:#888;">(${r.supplyEvents}회)</span>` : ""}</td>
       <td>${ratioCell}</td>
       <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
       <td class="action-btns">
@@ -394,7 +394,7 @@ function renderList() {
 
     const sampleOn = document.getElementById("sampleRowWrap").style.display !== "none";
     const supplyEventsVal = document.getElementById("supplyEvents").value;
-    if (sampleOn && !supplyEventsVal) return alert("당일 공급횟수를 입력하세요!\n(양액기 로그의 총 급수횟수)");
+    if (sampleOn && !supplyEventsVal) return alert("전일 공급횟수를 입력하세요!\n(어제 양액기 로그의 총 급수횟수)");
 
     const editId = document.getElementById("editId").value;
 

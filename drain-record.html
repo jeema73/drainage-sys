@@ -104,13 +104,13 @@
   </div>
   <div id="sampleRowWrap" style="display:none;">
       <div style="font-size:10.5px; font-weight:700; color:#4A7C59; margin-bottom:8px;">
-    🧪 샘플 측정 · 배액량 · 공급횟수
+    🧪 샘플 측정 · 배액량 · 전일 공급횟수
   </div>
     <div class="form-grid">
       <label>샘플 EC</label><input type="number" step="0.01" id="sampleEc">
       <label>샘플 pH</label><input type="number" step="0.01" id="samplePh">
       <label>배액량(mL)</label><input type="number" id="drainAmount">
-      <label>당일 공급횟수(회) *</label><input type="number" step="1" id="supplyEvents" placeholder="예: 8 (자동 프리필)">     
+      <label>전일 공급횟수(회) *</label><input type="number" step="1" id="supplyEvents" placeholder="어제 총 급수횟수 (자동 프리필)">     
     </div>
   </div>
   <div class="form-btn-row">
@@ -159,7 +159,7 @@
                     <th style="min-width:55px;">샘플EC</th>
                     <th style="min-width:55px;">샘플pH</th>
                     <th style="min-width:55px;">배지온도</th>
-                    <th style="min-width:55px;">배액량</th>
+                    <th style="min-width:70px;">배액량<br><span style="font-size:9px;color:#888;">(전일 공급횟수)</span></th>
                     <th style="min-width:60px;">배액율</th>
                     <th style="min-width:60px;">상태</th>
                     <th style="min-width:160px;">관리</th>
