@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  console.log("✅ ai-report.js 로드됨 (v260920)");
+  console.log("✅ ai-report.js 로드됨 (v260921)");
 
   let db = null;
   let fsMod = null;
@@ -18,10 +18,111 @@
   let allRecords = [];
   let allList = [];
   let currentPage = 1;
+  let gFarmData = null;
 
   const ROLE_ADMIN = "admin";
   const ROLE_MANAGER = "manager";
 
+  // =====================================================
+  // ✅ 역할별 맞춤 분석 (과목별 시험지)
+  // =====================================================
+  const ROLE_LABEL = { general: "종합", drain: "배액·관수", anomaly: "이상탐지", growth: "생육단계" };
+
+  const ROLE_PROMPTS = {
+    general: "당신은 전체 농장 관리 책임자입니다. EC·pH·배액율·구역 패턴을 종합 진단하여 ① 전체 건강도 요약 ② 최우선 조치 3가지 ③ 주간 관리 계획을 우선순위순으로 제시하세요.",
+    drain: "당신은 관수(급액) 전문가입니다. 배액율(목표 대비 ±10%p 정상 / ±20%p 주의)에만 집중하여 ① 과관수/과소관수 구역 특정 ② 급액횟수·시간 조정 제안 ③ 흐린날/맑은날 대응 전략을 제시하세요. EC·pH 일반론은 생략하세요.",
+    anomaly: "당신은 이상징후 탐지 전문가입니다. 정상 범위 이탈·급격한 변동·구역 간 편차만 찾아 ① 이상 기록 특정(날짜/구역/값) ② 추정 원인(센서오류/막힘/염류집적 등) ③ 긴급 조치 여부를 판정하세요. 이상 없으면 '이상 없음'으로 짧게 답하세요.",
+    growth: "당신은 딸기 생육 단계 전문가입니다. 현재 생육단계 대비 EC·pH 기준치가 적절한지, 단계 전환 시 기준을 어떻게 조정(인상/인하)할지만 조언하세요. 관수 횟수 계산은 생략하세요."
+  };
+
+  function detectRole(ai) {
+    const t = `${ai.aiName || ""} ${ai.aiTitle || ""} ${ai.analysisPrompt || ""} ${ai.analysisRole || ""}`;
+    if (/종합/.test(t)) return "general";
+    if (/배액|관수|급액/.test(t)) return "drain";
+    if (/이상|탐지|경고|변동/.test(t)) return "anomaly";
+    if (/생육|단계|활착|수확|비대/.test(t)) return "growth";
+    return ai.isMain ? "general" : "general";
+  }
+
+  function buildDataSummary(roleKey, records, sDate, eDate, st) {
+    const head = `
+【강북구 스마트팜 딸기 배액관리 — ${ROLE_LABEL[roleKey]} 분석 데이터】
+▸ 분석기간: ${sDate} ~ ${eDate}
+▸ 전체 ${records.length}건 / EC·pH: 정상 ${st.ok} / 주의 ${st.warn} / 경고 ${st.danger}
+▸ 배액율(목표 대비): 정상 ${st.ratioOk} / 주의 ${st.ratioWarn} / 경고 ${st.ratioDanger} / 미계산 ${st.ratioNone}`;
+
+    // 💧 배액·관수 전용 팩
+    if (roleKey === "drain") {
+      const byLine = {};
+      records.forEach(r => {
+        const s2 = checkStatus(r);
+        if (s2.ratio == null) return;
+        const ln = r.line || "V01";
+        if (!byLine[ln]) byLine[ln] = { sum: 0, cnt: 0, target: s2.targetRate };
+        byLine[ln].sum += s2.ratio; byLine[ln].cnt++;
+      });
+      const lineRows = Object.keys(byLine).sort().map(ln =>
+        `- ${ln}: 평균 ${(byLine[ln].sum / byLine[ln].cnt).toFixed(1)}% (목표 ${byLine[ln].target || "-"}%, ${byLine[ln].cnt}건)`).join("\n");
+      const recRows = records.filter(r => checkStatus(r).ratio != null)
+        .sort((a, b) => b.measureDate.localeCompare(a.measureDate)).slice(0, 30)
+        .map(r => {
+          const s2 = checkStatus(r);
+          return `${r.measureDate} ${r.zoneName}(${r.line || "V01"}) 배액:${r.drainAmount}mL 공급:${s2.supplyCount || "-"}회 배액율:${s2.ratio}%/목표${s2.targetRate || "-"}%`;
+        }).join("\n");
+      return `${head}
+▸ 라인별 배액율 평균:
+${lineRows || "- 없음"}
+▸ 배액 측정기록 (최신순 최대30):
+${recRows || "- 없음"}
+위 배액율 데이터만으로 관수 적정성을 진단하세요.`.trim();
+    }
+
+    // 🚨 이상탐지 전용 팩
+    if (roleKey === "anomaly") {
+      const bad = records.filter(r => ["warn", "danger"].includes(checkStatus(r).level))
+        .sort((a, b) => b.measureDate.localeCompare(a.measureDate)).slice(0, 30)
+        .map(r => {
+          const s2 = checkStatus(r);
+          return `${r.measureDate} ${r.measureTime || ""} ${r.zoneName}(${r.line || "V01"}) EC:${r.drainEc || "-"}(편차 ${s2.ecDev}) pH:${r.drainPh || "-"}(편차 ${s2.phDev}) ${s2.statusText}`;
+        }).join("\n");
+      return `${head}
+▸ 이상 의심 기록 (주의/경고만, 최대30):
+${bad || "- 없음 (기간 내 이상 없음)"}
+위 이상 의심 기록만 분석하세요.`.trim();
+    }
+
+    // 🌱 생육단계 전용 팩
+    if (roleKey === "growth") {
+      const stdRows = standards.map(s =>
+        `- ${s.periodName || "-"} / ${s.standardDate} / ${s.lineNo || s.line || "V01"} / 목표EC ${s.targetEc || s.supplyEc || "-"} / 목표pH ${s.targetPh || s.supplyPh || "-"} / 목표배액율 ${s.drainRate || "-"}%`).join("\n");
+      const farm = gFarmData ? `▸ 정식일: ${formatDateYmd(gFarmData.plantingDate) || "-"} / 시즌: ${gFarmData.season || "-"} / 품종: ${gFarmData.variety || "-"}` : "";
+      const recent = records.sort((a, b) => b.measureDate.localeCompare(a.measureDate)).slice(0, 15)
+        .map(r => {
+          const s2 = checkStatus(r);
+          return `${r.measureDate} ${r.zoneName} EC:${r.drainEc || "-"}(편차 ${s2.ecDev}) pH:${r.drainPh || "-"}(편차 ${s2.phDev})`;
+        }).join("\n");
+      return `${head}
+${farm}
+▸ 생육단계 기준 목록:
+${stdRows || "- 없음"}
+▸ 최근 기록 요약 (최신순 15건):
+${recent || "- 없음"}
+생육단계별 기준 적정성만 조언하세요.`.trim();
+    }
+
+    // ⭐ 종합 = 전체 데이터 팩
+    return `${head}
+▸ 판정기준: EC편차=실제EC-(기준EC+0.2) / pH편차=실제pH-기준pH, pH 6.8↑ 또는 5.2↓는 경고
+▸ 배액율: 배액량÷24h급액량×100 (목표 대비 ±10%p 정상 / ±20%p 주의 / 초과 경고)
+▸ 구역정보: ${zoneList.map(z => `- ${z.zoneName} / ${z.liquidLine || z.line || "V01"} / 샘플:${z.hasSampleData ? "예" : "아니오"}`).join("\n")}
+▸ 측정기록 (최신순, 최대30건): ${records.sort((a, b) => b.measureDate.localeCompare(a.measureDate)).slice(0, 30).map(r => {
+      const s2 = checkStatus(r);
+      return `${r.measureDate} ${r.measureTime || ""} | ${r.zoneName} | EC:${r.drainEc || "-"}(${s2.ecDev}) | pH:${r.drainPh || "-"}(${s2.phDev}) | 배액:${r.drainAmount ? r.drainAmount + "mL" : "-"}${s2.ratio != null ? `(배액율 ${s2.ratio}%${s2.targetRate ? "/목표" + s2.targetRate + "%" : ""})` : ""} | ${s2.statusText}`;
+    }).join("\n")}
+위 데이터를 분석하고 개선점과 권장사항을 제시해주세요.`.trim();
+  }
+
+  // =====================================================
   async function getFs() {
     if (!fsMod) {
       fsMod = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js");
@@ -87,6 +188,7 @@
       const topMetaEl = document.getElementById("topFarmMeta");
       if (snap.exists()) {
         const farm = snap.data();
+        gFarmData = farm;
         if (topFarmNameEl) topFarmNameEl.textContent = farm.farmName || "강북구 스마트팜 재배단지";
         if (topMetaEl) {
           topMetaEl.innerHTML = `
@@ -104,7 +206,7 @@
     }
   }
 
-  // ✅ 상태 판정 (EC/pH + 배액율) — 변수 선언 자체 완결형
+  // ✅ 상태 판정 (EC/pH + 배액율) — 급액셋팅 dailySupplyL 우선, 없으면 자동계산
   function checkStatus(r) {
     const recLine = r.line || r.lineNo || "V01";
     const std = standards.filter(s => {
@@ -113,7 +215,7 @@
     }).sort((a, b) => b.standardDate.localeCompare(a.standardDate))[0];
 
     if (!std) {
-      return { level: "none", ecDev: "-", phDev: "-", supEc: "-", supPh: "-", statusText: "기준없음", statusColor: "#888", ratio: null, ratioColor: "#999", targetRate: null };
+      return { level: "none", ecDev: "-", phDev: "-", supEc: "-", supPh: "-", statusText: "기준없음", statusColor: "#888", ratio: null, ratioColor: "#999", targetRate: null, supplyCount: null };
     }
 
     const rawEc = (std.targetEc !== undefined && std.targetEc !== null && std.targetEc !== "") ? std.targetEc : std.supplyEc;
@@ -140,21 +242,24 @@
     if (ecLevel === "danger" || phLevel === "danger") level = "danger";
     else if (ecLevel === "warn" || phLevel === "warn") level = "warn";
 
-    // ✅ 배액율 = 배액량(L) ÷ (기록의 횟수 × 기준 1회 급액량) × 100
-    let ratio = null;
-    let ratioLevel = "none";
+    // ✅ 배액율 = 배액량(L) ÷ 24h 급액량(L) × 100
+    let ratio = null, ratioLevel = "none", supplyCount = null, dailyL = 0;
     const targetRate = parseFloat(std.drainRate) || null;
     const drainMl = parseFloat(r.drainAmount);
-    const events = parseFloat(r.supplyEvents);
     const ss = supplySettings.filter(s => {
       const ssLine = s.lineNo || s.line || "V01";
       return ssLine === recLine && s.settingDate <= r.measureDate;
     }).sort((a, b) => b.settingDate.localeCompare(a.settingDate))[0];
 
-    if (ss && events > 0 && !isNaN(drainMl) && drainMl > 0) {
-      const perEventL = (parseFloat(ss.minutesPerEvent) / 60) * parseFloat(ss.flowRatePerBag);
-      const dailyL = perEventL * events;
-      if (dailyL > 0) {
+    if (ss) {
+      supplyCount = (parseFloat(ss.eventsPerDay) || 0) + (parseFloat(ss.addEventsPerDay) || 0) || null;
+      dailyL = parseFloat(ss.dailySupplyL) || 0;
+      if (!(dailyL > 0)) {
+        const totalMin = (parseFloat(ss.minutesPerEvent) || 0) * (parseFloat(ss.eventsPerDay) || 0)
+          + (parseFloat(ss.addEventsPerDay) || 0) * (parseFloat(ss.addMinutesPerEvent) || 0);
+        dailyL = (totalMin / 60) * (parseFloat(ss.flowRatePerBag) || 0);
+      }
+      if (dailyL > 0 && !isNaN(drainMl) && drainMl > 0) {
         ratio = (drainMl / 1000) / dailyL * 100;
         if (targetRate) {
           const ad = Math.abs(ratio - targetRate);
@@ -171,7 +276,7 @@
       statusText: level === "danger" ? "🚨 경고" : level === "warn" ? "⚠️ 주의" : "✅ 정상",
       statusColor: level === "danger" ? "#c62828" : level === "warn" ? "#ef6c00" : "#2e7d32",
       ratio: ratio === null ? null : Math.round(ratio * 10) / 10,
-      ratioColor, targetRate
+      ratioColor, targetRate, supplyCount
     };
   }
 
@@ -316,8 +421,9 @@
     if (!sDate || !eDate) return;
     const filtered = allRecords.filter(r => r.measureDate && r.measureDate >= sDate && r.measureDate <= eDate);
     document.getElementById("totalCount").textContent = filtered.length + "건";
-    const lineSet = new Set(zoneList.map(z => z.liquidLine || z.line || "V01"));
-    document.getElementById("lineInfo").textContent = lineSet.size + "개 라인";
+    const lineSet = new Set(filtered.map(r => r.line || r.lineNo || "V01"));
+    const lineNames = [...lineSet].sort().join("·");
+    document.getElementById("lineInfo").textContent = lineNames ? `${lineSet.size}개 라인 (${lineNames})` : "0개 라인";
     document.getElementById("stdInfo").textContent = standards[0]?.periodName || standards[0]?.name || standards[0]?.standardDate || "기준";
   }
 
@@ -349,12 +455,12 @@
            data-key="${ai.apiKey || ''}"
            data-prompt="${(ai.analysisPrompt || ai.analysisRole || '').replace(/"/g, '&quot;')}">
         ${ai.isMain ? "⭐" : ""} <strong>${ai.aiTitle || ai.aiName || "이름없음"}</strong>
+        <span class="badge">${ROLE_LABEL[detectRole(ai)]}</span>
         <span class="badge">${ai.modelName || "gemini-3.6-flash"}</span>
       </label>
     `).join("");
   }
 
-  // ✅ 503/429 서버 혼잡 자동 재시도
   async function fetchWithRetry(url, options, retries = 2, delayMs = 2500) {
     let res;
     for (let i = 0; i <= retries; i++) {
@@ -385,37 +491,23 @@
 
     let ok = 0, warn = 0, danger = 0;
     records.forEach(r => {
-      const st = checkStatus(r);
-      if (st.level === "danger") danger++;
-      else if (st.level === "warn") warn++;
+      const s2 = checkStatus(r);
+      if (s2.level === "danger") danger++;
+      else if (s2.level === "warn") warn++;
       else ok++;
     });
 
-    // ✅ 배액율 통계
     let ratioOk = 0, ratioWarn = 0, ratioDanger = 0, ratioNone = 0;
     records.forEach(r => {
-      const st = checkStatus(r);
-      if (st.ratio == null) { ratioNone++; return; }
-      if (!st.targetRate) return;
-      const ad = Math.abs(st.ratio - st.targetRate);
+      const s2 = checkStatus(r);
+      if (s2.ratio == null) { ratioNone++; return; }
+      if (!s2.targetRate) return;
+      const ad = Math.abs(s2.ratio - s2.targetRate);
       if (ad <= 10) ratioOk++;
       else if (ad <= 20) ratioWarn++;
       else ratioDanger++;
     });
-
-    const dataSummary = `
-【강북구 스마트팜 재배단지 딸기 배액관리】
-▸ 분석기간: ${sDate} ~ ${eDate}
-▸ 전체 ${records.length}건 / EC·pH 기준: 정상 ${ok}건 / 주의 ${warn}건 / 경고 ${danger}건
-▸ 배액율 현황 (목표 대비): 정상(±10%p) ${ratioOk}건 / 주의(±20%p) ${ratioWarn}건 / 경고(초과) ${ratioDanger}건 / 미계산 ${ratioNone}건
-▸ 판정기준: EC편차=실제EC-(기준EC+0.2) / pH편차=실제pH-기준pH, pH 6.8↑ 또는 5.2↓는 경고
-▸ 배액율: 배액량÷(급액횟수×1회급액량)×100 (목표 배액율 대비 ±10%p 정상 / ±20%p 주의 / 초과 경고)
-▸ 구역정보: ${zoneList.map(z => `- ${z.zoneName} / ${z.liquidLine || z.line || "V01"} / 샘플:${z.hasSampleData ? "예" : "아니오"}`).join("\n")}
-▸ 측정기록 (최신순, 최대30건): ${records.sort((a, b) => b.measureDate.localeCompare(a.measureDate)).slice(0, 30).map(r => {
-      const st = checkStatus(r);
-      return `${r.measureDate} ${r.measureTime || ""} | ${r.zoneName} | EC:${r.drainEc || "-"}(${st.ecDev}) | pH:${r.drainPh || "-"}(${st.phDev}) | 배액:${r.drainAmount ? r.drainAmount + "mL" : "-"}${st.ratio != null ? `(배액율 ${st.ratio}%${st.targetRate ? "/목표" + st.targetRate + "%" : ""})` : ""} | ${st.statusText}`;
-    }).join("\n")}
-위 데이터를 분석하고 개선점과 권장사항을 제시해주세요. 특히 EC·pH 이상 징후와 배액율 문제를 구분하여 진단하고, 급액농도·관수횟수·환경요인 측면에서 구체적인 조치를 제안해주세요.`.trim();
+    const st = { ok, warn, danger, ratioOk, ratioWarn, ratioDanger, ratioNone };
 
     const area = document.getElementById("aiResultArea");
     area.innerHTML = "";
@@ -424,15 +516,19 @@
       const aiName = cb.dataset.name;
       const model = cb.dataset.model;
       const apiKey = cb.dataset.key?.trim();
-      const role = cb.dataset.prompt || "종합분석";
-      const prompt = `당신은 스마트팜 딸기 재배 및 배액(드레인) 관리 전문가입니다.
-분석 역할: ${role}
-아래 측정 데이터를 바탕으로 문제점 진단, 원인 분석, 구체적인 개선점과 권장사항을 제시해주세요.`;
-      const cardId = "card-" + cb.value;
+      const ai = aiList.find(a => a.id === cb.value) || {};
+      const roleKey = detectRole(ai);
+      const userGuide = (cb.dataset.prompt || "").trim();
 
+      // ✅ 과목별 지시문 + 과목별 시험지(데이터 팩)
+      const prompt = `당신은 스마트팜 딸기 재배 및 배액(드레인) 관리 전문가입니다.
+${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` : ""}`;
+      const dataSummary = buildDataSummary(roleKey, records, sDate, eDate, st);
+
+      const cardId = "card-" + cb.value;
       area.innerHTML += `
         <div class="result-card" id="${cardId}">
-          <h4>🤖 ${aiName} <span style="color:#999;">분석중...</span></h4>
+          <h4>🤖 ${aiName} <span style="color:#999;">[${ROLE_LABEL[roleKey]}] 분석중...</span></h4>
           <div class="result-body">🔄 요청중...</div>
         </div>`;
 
@@ -494,7 +590,7 @@
         const database = await ensureDb();
         const { collection, addDoc } = await getFs();
         await addDoc(collection(database, AI_LOG_COLLECTION), {
-          aiName, model, period: `${sDate} ~ ${eDate}`,
+          aiName, model, period: `${sDate} ~ ${eDate}`, role: ROLE_LABEL[roleKey],
           analyzedAt: new Date().toISOString(),
           resultText: text
         });
@@ -612,7 +708,6 @@
         }
       }
 
-      // ✅ 분석 실행 버튼 자동 연결 (인라인 onclick 없어도 동작)
       document.querySelectorAll("#aiSelectArea button").forEach(btn => {
         if (btn.dataset.aiBound) return;
         btn.dataset.aiBound = "1";
@@ -621,7 +716,6 @@
         }
       });
 
-      // ✅ 모달 닫기 버튼 자동 연결
       const closeBtn = document.querySelector(".modal-close");
       if (closeBtn && !closeBtn.dataset.aiBound) {
         closeBtn.dataset.aiBound = "1";
