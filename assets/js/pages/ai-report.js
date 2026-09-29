@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  console.log("✅ ai-report.js 로드됨 (v260921)");
+  console.log("✅ ai-report.js 로드됨 (v260922)");
 
   let db = null;
   let fsMod = null;
@@ -19,6 +19,7 @@
   let allList = [];
   let currentPage = 1;
   let gFarmData = null;
+  const followCtx = {}; // ✅ 추가 질문 대화 맥락
 
   const ROLE_ADMIN = "admin";
   const ROLE_MANAGER = "manager";
@@ -589,11 +590,34 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
 
         const database = await ensureDb();
         const { collection, addDoc } = await getFs();
-        await addDoc(collection(database, AI_LOG_COLLECTION), {
+        const docRef = await addDoc(collection(database, AI_LOG_COLLECTION), {
           aiName, model, period: `${sDate} ~ ${eDate}`, role: ROLE_LABEL[roleKey],
           analyzedAt: new Date().toISOString(),
           resultText: text
         });
+
+        // ✅ 추가 질문용 맥락 저장 + 입력 UI 주입
+        followCtx[cardId] = {
+          prompt: fullPrompt,
+          history: [
+            { role: "user", text: fullPrompt },
+            { role: "model", text: text }
+          ],
+          fullText: text,
+          logId: docRef.id,
+          model, endpoint, apiKey
+        };
+        const cardEl = document.getElementById(cardId);
+        if (cardEl && !cardEl.querySelector(".followup-box")) {
+          cardEl.insertAdjacentHTML("beforeend", `
+            <div class="followup-box" style="margin-top:10px; padding-top:8px; border-top:1px dashed #ddd;">
+              <div style="display:flex; gap:6px;">
+                <input type="text" class="followup-input" style="flex:1; padding:6px 8px; font-size:11px; border:1px solid #ccc; border-radius:4px;" placeholder="❓ 추가 질문 (예: 3번라인 관수를 얼마나 늘릴까?)">
+                <button class="btn-sm btn-primary followup-btn" data-card="${cardId}">추가 질문</button>
+              </div>
+              <div class="followup-log" style="margin-top:8px;"></div>
+            </div>`);
+        }
 
       } catch (e) {
         const isCors = (e instanceof TypeError);
@@ -611,6 +635,68 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
     }
 
     await loadSavedResults();
+  }
+
+  // ✅ 추가 질문 — 기존 리포트 맥락 유지, 답변은 리포트+저장로그에 누적
+  async function askFollowUp(cardId) {
+    const ctx = followCtx[cardId];
+    const card = document.getElementById(cardId);
+    if (!ctx || !card) return;
+    const input = card.querySelector(".followup-input");
+    const q = (input.value || "").trim();
+    if (!q) return alert("추가 질문을 입력하세요!");
+    const log = card.querySelector(".followup-log");
+    const btn = card.querySelector(".followup-btn");
+    btn.disabled = true;
+    log.insertAdjacentHTML("beforeend", `<div style="margin:6px 0; padding:6px 8px; background:#f5f9ff; border-radius:4px; font-size:11px;"><strong>🙋 Q. ${q}</strong><div class="fa-answer" style="margin-top:4px; white-space:pre-wrap;">🔄 답변 중...</div></div>`);
+    const answerEl = log.lastElementChild.querySelector(".fa-answer");
+
+    ctx.history.push({ role: "user", text: q });
+
+    try {
+      let text = "";
+      if (ctx.endpoint.includes("generativelanguage.googleapis.com")) {
+        let url = ctx.endpoint.endsWith("/") ? ctx.endpoint : ctx.endpoint + "/";
+        url += `${ctx.model}:generateContent?key=${ctx.apiKey}`;
+        const contents = ctx.history.map(h => ({ role: h.role === "model" ? "model" : "user", parts: [{ text: h.text }] }));
+        const res = await fetchWithRetry(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        text = json?.candidates?.[0]?.content?.parts?.[0]?.text || json?.error?.message || "응답을 받아오지 못했습니다.";
+      } else {
+        let url = ctx.endpoint.endsWith("/") ? ctx.endpoint : ctx.endpoint + "/";
+        url += "chat/completions";
+        const messages = ctx.history.map(h => ({ role: h.role === "model" ? "assistant" : "user", content: h.text }));
+        const res = await fetchWithRetry(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${ctx.apiKey}` },
+          body: JSON.stringify({ model: ctx.model, messages })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        text = json?.choices?.[0]?.message?.content || json?.error?.message || "응답을 받아오지 못했습니다.";
+      }
+
+      answerEl.textContent = text;
+      ctx.history.push({ role: "model", text });
+      ctx.fullText += `\n\n──────────\n[추가 질문] ${q}\n[답변] ${text}`;
+
+      // ✅ 저장된 리포트(과거결과 모달)에도 반영
+      const database = await ensureDb();
+      const { doc, updateDoc } = await getFs();
+      await updateDoc(doc(database, AI_LOG_COLLECTION, ctx.logId), { resultText: ctx.fullText });
+
+      input.value = "";
+    } catch (e) {
+      answerEl.textContent = "❌ 오류: " + e.message;
+      ctx.history.pop();
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   async function loadSavedResults() {
@@ -708,6 +794,13 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
         }
       }
 
+      // ✅ 추가 질문 버튼 클릭 처리
+      const fuBtn = e.target.closest(".followup-btn");
+      if (fuBtn) {
+        askFollowUp(fuBtn.dataset.card);
+        return;
+      }
+
       document.querySelectorAll("#aiSelectArea button").forEach(btn => {
         if (btn.dataset.aiBound) return;
         btn.dataset.aiBound = "1";
@@ -722,6 +815,15 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
         if (!closeBtn.hasAttribute("onclick")) {
           closeBtn.addEventListener("click", closeModal);
         }
+      }
+    });
+
+    // ✅ 추가 질문 Enter 키 지원
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter" && e.target.classList.contains("followup-input")) {
+        const box = e.target.closest(".followup-box");
+        const btn = box ? box.querySelector(".followup-btn") : null;
+        if (btn) askFollowUp(btn.dataset.card);
       }
     });
 
@@ -782,6 +884,7 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
   window.setPreset = setPreset;
   window.runAIAnalysis = runAIAnalysis;
   window.goPage = goPage;
+  window.askFollowUp = askFollowUp;
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
