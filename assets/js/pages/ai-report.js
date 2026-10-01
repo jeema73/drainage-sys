@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  console.log("✅ ai-report.js 로드됨 (v260922)");
+  console.log("✅ ai-report.js 로드됨 (v260923)");
 
   let db = null;
   let fsMod = null;
@@ -19,7 +19,8 @@
   let allList = [];
   let currentPage = 1;
   let gFarmData = null;
-  const followCtx = {}; // ✅ 추가 질문 대화 맥락
+  const followCtx = {};
+  let isRunning = false; // ✅ 중복 실행 방지 플래그
 
   const ROLE_ADMIN = "admin";
   const ROLE_MANAGER = "manager";
@@ -52,7 +53,6 @@
 ▸ 전체 ${records.length}건 / EC·pH: 정상 ${st.ok} / 주의 ${st.warn} / 경고 ${st.danger}
 ▸ 배액율(목표 대비): 정상 ${st.ratioOk} / 주의 ${st.ratioWarn} / 경고 ${st.ratioDanger} / 미계산 ${st.ratioNone}`;
 
-    // 💧 배액·관수 전용 팩
     if (roleKey === "drain") {
       const byLine = {};
       records.forEach(r => {
@@ -78,7 +78,6 @@ ${recRows || "- 없음"}
 위 배액율 데이터만으로 관수 적정성을 진단하세요.`.trim();
     }
 
-    // 🚨 이상탐지 전용 팩
     if (roleKey === "anomaly") {
       const bad = records.filter(r => ["warn", "danger"].includes(checkStatus(r).level))
         .sort((a, b) => b.measureDate.localeCompare(a.measureDate)).slice(0, 30)
@@ -92,7 +91,6 @@ ${bad || "- 없음 (기간 내 이상 없음)"}
 위 이상 의심 기록만 분석하세요.`.trim();
     }
 
-    // 🌱 생육단계 전용 팩
     if (roleKey === "growth") {
       const stdRows = standards.map(s =>
         `- ${s.periodName || "-"} / ${s.standardDate} / ${s.lineNo || s.line || "V01"} / 목표EC ${s.targetEc || s.supplyEc || "-"} / 목표pH ${s.targetPh || s.supplyPh || "-"} / 목표배액율 ${s.drainRate || "-"}%`).join("\n");
@@ -111,7 +109,6 @@ ${recent || "- 없음"}
 생육단계별 기준 적정성만 조언하세요.`.trim();
     }
 
-    // ⭐ 종합 = 전체 데이터 팩
     return `${head}
 ▸ 판정기준: EC편차=실제EC-(기준EC+0.2) / pH편차=실제pH-기준pH, pH 6.8↑ 또는 5.2↓는 경고
 ▸ 배액율: 배액량÷24h급액량×100 (목표 대비 ±10%p 정상 / ±20%p 주의 / 초과 경고)
@@ -207,7 +204,6 @@ ${recent || "- 없음"}
     }
   }
 
-  // ✅ 상태 판정 (EC/pH + 배액율) — 급액셋팅 dailySupplyL 우선, 없으면 자동계산
   function checkStatus(r) {
     const recLine = r.line || r.lineNo || "V01";
     const std = standards.filter(s => {
@@ -243,7 +239,6 @@ ${recent || "- 없음"}
     if (ecLevel === "danger" || phLevel === "danger") level = "danger";
     else if (ecLevel === "warn" || phLevel === "warn") level = "warn";
 
-    // ✅ 배액율 = 배액량(L) ÷ 24h 급액량(L) × 100
     let ratio = null, ratioLevel = "none", supplyCount = null, dailyL = 0;
     const targetRate = parseFloat(std.drainRate) || null;
     const drainMl = parseFloat(r.drainAmount);
@@ -351,7 +346,8 @@ ${recent || "- 없음"}
       year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
     });
     document.getElementById("modalTitle").textContent = log.aiName || "AI분석 결과";
-    document.getElementById("modalMeta").textContent = `📅 분석일시: ${dateStr}  |  📊 분석기간: ${log.period || "-"}`;
+    const preInfo = log.preInstructions ? `  |  💬 "${log.preInstructions}"` : "";
+    document.getElementById("modalMeta").textContent = `📅 분석일시: ${dateStr}  |  📊 분석기간: ${log.period || "-"}${preInfo}`;
     document.getElementById("modalBody").textContent = "🔄 내용 불러오는 중...";
     document.getElementById("resultModal").style.display = "flex";
     document.body.style.overflow = "hidden";
@@ -478,7 +474,9 @@ ${recent || "- 없음"}
     return res;
   }
 
+  // ✅ 분석 실행 — 중복 실행 완전 차단 + 사전 지시사항 지원
   async function runAIAnalysis() {
+    if (isRunning) return alert("이미 분석이 실행 중입니다. 잠시만 기다려주세요.");
     if (!canRunAnalysis()) return alert("분석 실행 권한이 없습니다.");
     const checks = document.querySelectorAll("#aiCheckList input:checked");
     if (!checks.length) return alert("분석할 AI를 하나 이상 선택하세요!");
@@ -488,156 +486,173 @@ ${recent || "- 없음"}
     const eDate = document.getElementById("eDate").value;
     if (!sDate || !eDate) return alert("시작일과 종료일을 지정하세요!");
 
-    const records = allRecords.filter(r => r.measureDate && r.measureDate >= sDate && r.measureDate <= eDate);
+    // ✅ 사전 지시사항 읽기
+    const preInstructions = (document.getElementById("preInstructions").value || "").trim();
 
-    let ok = 0, warn = 0, danger = 0;
-    records.forEach(r => {
-      const s2 = checkStatus(r);
-      if (s2.level === "danger") danger++;
-      else if (s2.level === "warn") warn++;
-      else ok++;
-    });
-
-    let ratioOk = 0, ratioWarn = 0, ratioDanger = 0, ratioNone = 0;
-    records.forEach(r => {
-      const s2 = checkStatus(r);
-      if (s2.ratio == null) { ratioNone++; return; }
-      if (!s2.targetRate) return;
-      const ad = Math.abs(s2.ratio - s2.targetRate);
-      if (ad <= 10) ratioOk++;
-      else if (ad <= 20) ratioWarn++;
-      else ratioDanger++;
-    });
-    const st = { ok, warn, danger, ratioOk, ratioWarn, ratioDanger, ratioNone };
-
-    const area = document.getElementById("aiResultArea");
-    area.innerHTML = "";
-
-    for (const cb of checks) {
-      const aiName = cb.dataset.name;
-      const model = cb.dataset.model;
-      const apiKey = cb.dataset.key?.trim();
-      const ai = aiList.find(a => a.id === cb.value) || {};
-      const roleKey = detectRole(ai);
-      const userGuide = (cb.dataset.prompt || "").trim();
-
-      // ✅ 과목별 지시문 + 과목별 시험지(데이터 팩)
-      const prompt = `당신은 스마트팜 딸기 재배 및 배액(드레인) 관리 전문가입니다.
-${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` : ""}`;
-      const dataSummary = buildDataSummary(roleKey, records, sDate, eDate, st);
-
-      const cardId = "card-" + cb.value;
-      area.innerHTML += `
-        <div class="result-card" id="${cardId}">
-          <h4>🤖 ${aiName} <span style="color:#999;">[${ROLE_LABEL[roleKey]}] 분석중...</span></h4>
-          <div class="result-body">🔄 요청중...</div>
-        </div>`;
-
-      if (!apiKey) {
-        document.getElementById(cardId).querySelector(".result-body").textContent = "❌ API키가 없습니다. AI설정에서 API키를 등록해주세요.";
-        continue;
-      }
-
-      try {
-        const endpoint = (cb.dataset.endpoint || DEFAULT_ENDPOINT).trim();
-        const fullPrompt = `${prompt}\n\n${dataSummary}`;
-        let text = "";
-
-        if (endpoint.includes("generativelanguage.googleapis.com")) {
-          let url = endpoint.endsWith("/") ? endpoint : endpoint + "/";
-          url += `${model}:generateContent?key=${apiKey}`;
-          const res = await fetchWithRetry(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
-          });
-          if (!res.ok) {
-            const errText = await res.text().catch(() => "");
-            throw new Error(`HTTP ${res.status}${errText ? " - " + errText : ""}`);
-          }
-          const json = await res.json();
-          text = json?.candidates?.[0]?.content?.parts?.[0]?.text
-               || json?.error?.message
-               || "응답을 받아오지 못했습니다.";
-        }
-        else {
-          let url = endpoint.endsWith("/") ? endpoint : endpoint + "/";
-          url += "chat/completions";
-          const res = await fetchWithRetry(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-              model: model,
-              messages: [{ role: "user", content: fullPrompt }]
-            })
-          });
-          if (!res.ok) {
-            const errText = await res.text().catch(() => "");
-            throw new Error(`HTTP ${res.status}${errText ? " - " + errText : ""}`);
-          }
-          const json = await res.json();
-          text = json?.choices?.[0]?.message?.content
-               || json?.error?.message
-               || "응답을 받아오지 못했습니다.";
-        }
-
-        document.querySelector(`#${cardId} h4 span`).textContent = "✅ 완료";
-        document.querySelector(`#${cardId} h4 span`).style.color = "#2e7d32";
-        document.querySelector(`#${cardId} .result-body`).textContent = text;
-
-        const database = await ensureDb();
-        const { collection, addDoc } = await getFs();
-        const docRef = await addDoc(collection(database, AI_LOG_COLLECTION), {
-          aiName, model, period: `${sDate} ~ ${eDate}`, role: ROLE_LABEL[roleKey],
-          analyzedAt: new Date().toISOString(),
-          resultText: text
-        });
-
-        // ✅ 추가 질문용 맥락 저장 + 입력 UI 주입
-        followCtx[cardId] = {
-          prompt: fullPrompt,
-          history: [
-            { role: "user", text: fullPrompt },
-            { role: "model", text: text }
-          ],
-          fullText: text,
-          logId: docRef.id,
-          model, endpoint, apiKey
-        };
-        const cardEl = document.getElementById(cardId);
-        if (cardEl && !cardEl.querySelector(".followup-box")) {
-          cardEl.insertAdjacentHTML("beforeend", `
-            <div class="followup-box" style="margin-top:10px; padding-top:8px; border-top:1px dashed #ddd;">
-              <div style="display:flex; gap:6px;">
-                <input type="text" class="followup-input" style="flex:1; padding:6px 8px; font-size:11px; border:1px solid #ccc; border-radius:4px;" placeholder="❓ 추가 질문 (예: 3번라인 관수를 얼마나 늘릴까?)">
-                <button class="btn-sm btn-primary followup-btn" data-card="${cardId}">추가 질문</button>
-              </div>
-              <div class="followup-log" style="margin-top:8px;"></div>
-            </div>`);
-        }
-
-      } catch (e) {
-        const isCors = (e instanceof TypeError);
-        const isBusy = /503|429|500/.test(e.message);
-        const msg = isCors
-          ? "CORS/네트워크 오류! API 서버가 브라우저 직접 호출을 거부했습니다."
-          : isBusy
-            ? "서버 혼잡(503/429)! 자동 재시도에도 실패했어요. 잠시 후 다시 누르세요."
-            : e.message;
-        document.querySelector(`#${cardId} .result-body`).textContent = "❌ 오류: " + msg;
-        document.querySelector(`#${cardId} h4 span`).textContent = "실패";
-        document.querySelector(`#${cardId} h4 span`).style.color = "#c62828";
-        console.error(`[AI분석 오류] ${aiName}:`, e);
-      }
+    isRunning = true;
+    const runBtn = document.getElementById("runAnalysisBtn");
+    if (runBtn) {
+      runBtn.disabled = true;
+      runBtn.textContent = "🔄 분석 실행 중...";
     }
 
-    await loadSavedResults();
+    try {
+      const records = allRecords.filter(r => r.measureDate && r.measureDate >= sDate && r.measureDate <= eDate);
+
+      let ok = 0, warn = 0, danger = 0;
+      records.forEach(r => {
+        const s2 = checkStatus(r);
+        if (s2.level === "danger") danger++;
+        else if (s2.level === "warn") warn++;
+        else ok++;
+      });
+
+      let ratioOk = 0, ratioWarn = 0, ratioDanger = 0, ratioNone = 0;
+      records.forEach(r => {
+        const s2 = checkStatus(r);
+        if (s2.ratio == null) { ratioNone++; return; }
+        if (!s2.targetRate) return;
+        const ad = Math.abs(s2.ratio - s2.targetRate);
+        if (ad <= 10) ratioOk++;
+        else if (ad <= 20) ratioWarn++;
+        else ratioDanger++;
+      });
+      const st = { ok, warn, danger, ratioOk, ratioWarn, ratioDanger, ratioNone };
+
+      const area = document.getElementById("aiResultArea");
+      area.innerHTML = "";
+
+      for (const cb of checks) {
+        const aiName = cb.dataset.name;
+        const model = cb.dataset.model;
+        const apiKey = cb.dataset.key?.trim();
+        const ai = aiList.find(a => a.id === cb.value) || {};
+        const roleKey = detectRole(ai);
+        const userGuide = (cb.dataset.prompt || "").trim();
+
+        // ✅ 프롬프트에 사전 지시사항 주입
+        const prompt = `당신은 스마트팜 딸기 재배 및 배액(드레인) 관리 전문가입니다.
+${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` : ""}${preInstructions ? `\n\n🎯 사용자 특별 지시사항: ${preInstructions}\n(위 지시사항을 우선적으로 반영하여 분석하세요)` : ""}`;
+        const dataSummary = buildDataSummary(roleKey, records, sDate, eDate, st);
+
+        const cardId = "card-" + cb.value;
+        area.innerHTML += `
+          <div class="result-card" id="${cardId}">
+            <h4>🤖 ${aiName} <span style="color:#999;">[${ROLE_LABEL[roleKey]}] 분석중...</span></h4>
+            <div class="result-body">🔄 요청중...</div>
+          </div>`;
+
+        if (!apiKey) {
+          document.getElementById(cardId).querySelector(".result-body").textContent = "❌ API키가 없습니다. AI설정에서 API키를 등록해주세요.";
+          continue;
+        }
+
+        try {
+          const endpoint = (cb.dataset.endpoint || DEFAULT_ENDPOINT).trim();
+          const fullPrompt = `${prompt}\n\n${dataSummary}`;
+          let text = "";
+
+          if (endpoint.includes("generativelanguage.googleapis.com")) {
+            let url = endpoint.endsWith("/") ? endpoint : endpoint + "/";
+            url += `${model}:generateContent?key=${apiKey}`;
+            const res = await fetchWithRetry(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
+            });
+            if (!res.ok) {
+              const errText = await res.text().catch(() => "");
+              throw new Error(`HTTP ${res.status}${errText ? " - " + errText : ""}`);
+            }
+            const json = await res.json();
+            text = json?.candidates?.[0]?.content?.parts?.[0]?.text
+                 || json?.error?.message
+                 || "응답을 받아오지 못했습니다.";
+          }
+          else {
+            let url = endpoint.endsWith("/") ? endpoint : endpoint + "/";
+            url += "chat/completions";
+            const res = await fetchWithRetry(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+              },
+              body: JSON.stringify({
+                model: model,
+                messages: [{ role: "user", content: fullPrompt }]
+              })
+            });
+            if (!res.ok) {
+              const errText = await res.text().catch(() => "");
+              throw new Error(`HTTP ${res.status}${errText ? " - " + errText : ""}`);
+            }
+            const json = await res.json();
+            text = json?.choices?.[0]?.message?.content
+                 || json?.error?.message
+                 || "응답을 받아오지 못했습니다.";
+          }
+
+          document.querySelector(`#${cardId} h4 span`).textContent = "✅ 완료";
+          document.querySelector(`#${cardId} h4 span`).style.color = "#2e7d32";
+          document.querySelector(`#${cardId} .result-body`).textContent = text;
+
+          const database = await ensureDb();
+          const { collection, addDoc } = await getFs();
+          const docRef = await addDoc(collection(database, AI_LOG_COLLECTION), {
+            aiName, model, period: `${sDate} ~ ${eDate}`, role: ROLE_LABEL[roleKey],
+            preInstructions: preInstructions || null, // ✅ 사전 지시사항 저장
+            analyzedAt: new Date().toISOString(),
+            resultText: text
+          });
+
+          followCtx[cardId] = {
+            prompt: fullPrompt,
+            history: [
+              { role: "user", text: fullPrompt },
+              { role: "model", text: text }
+            ],
+            fullText: text,
+            logId: docRef.id,
+            model, endpoint, apiKey
+          };
+          const cardEl = document.getElementById(cardId);
+          if (cardEl && !cardEl.querySelector(".followup-box")) {
+            cardEl.insertAdjacentHTML("beforeend", `
+              <div class="followup-box" style="margin-top:10px; padding-top:8px; border-top:1px dashed #ddd;">
+                <div style="display:flex; gap:6px;">
+                  <input type="text" class="followup-input" style="flex:1; padding:6px 8px; font-size:11px; border:1px solid #ccc; border-radius:4px;" placeholder="❓ 추가 질문 (예: 3번라인 관수를 얼마나 늘릴까?)">
+                  <button class="btn-sm btn-primary followup-btn" data-card="${cardId}">추가 질문</button>
+                </div>
+                <div class="followup-log" style="margin-top:8px;"></div>
+              </div>`);
+          }
+
+        } catch (e) {
+          const isCors = (e instanceof TypeError);
+          const isBusy = /503|429|500/.test(e.message);
+          const msg = isCors
+            ? "CORS/네트워크 오류! API 서버가 브라우저 직접 호출을 거부했습니다."
+            : isBusy
+              ? "서버 혼잡(503/429)! 자동 재시도에도 실패했어요. 잠시 후 다시 누르세요."
+              : e.message;
+          document.querySelector(`#${cardId} .result-body`).textContent = "❌ 오류: " + msg;
+          document.querySelector(`#${cardId} h4 span`).textContent = "실패";
+          document.querySelector(`#${cardId} h4 span`).style.color = "#c62828";
+          console.error(`[AI분석 오류] ${aiName}:`, e);
+        }
+      }
+
+      await loadSavedResults();
+    } finally {
+      isRunning = false;
+      if (runBtn) {
+        runBtn.disabled = false;
+        runBtn.textContent = "✅ 선택한 AI로 분석 실행";
+      }
+    }
   }
 
-  // ✅ 추가 질문 — 기존 리포트 맥락 유지, 답변은 리포트+저장로그에 누적
   async function askFollowUp(cardId) {
     const ctx = followCtx[cardId];
     const card = document.getElementById(cardId);
@@ -685,7 +700,6 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
       ctx.history.push({ role: "model", text });
       ctx.fullText += `\n\n──────────\n[추가 질문] ${q}\n[답변] ${text}`;
 
-      // ✅ 저장된 리포트(과거결과 모달)에도 반영
       const database = await ensureDb();
       const { doc, updateDoc } = await getFs();
       await updateDoc(doc(database, AI_LOG_COLLECTION, ctx.logId), { resultText: ctx.fullText });
@@ -711,7 +725,8 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
         id: d.id,
         aiName: d.data().aiName || "AI",
         period: d.data().period || "-",
-        analyzedAt: d.data().analyzedAt
+        analyzedAt: d.data().analyzedAt,
+        preInstructions: d.data().preInstructions || null // ✅ 사전 지시사항 로딩
       }));
       currentPage = 1;
       renderPage();
@@ -752,10 +767,11 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
               year: "numeric", month: "2-digit", day: "2-digit",
               hour: "2-digit", minute: "2-digit"
             });
+            const preBadge = log.preInstructions ? ` <span style="font-size:9px; color:#1976d2; background:#e3f2fd; padding:1px 5px; border-radius:8px;" title="${log.preInstructions.replace(/"/g, '&quot;')}">💬 지시有</span>` : "";
             return `
               <tr>
                 <td class="past-date" onclick="openResultModal('${log.id}')">${dateStr}</td>
-                <td class="past-name" onclick="openResultModal('${log.id}')">${log.aiName}</td>
+                <td class="past-name" onclick="openResultModal('${log.id}')">${log.aiName}${preBadge}</td>
                 <td onclick="openResultModal('${log.id}')">${log.period}</td>
                 <td style="text-align:center;">
                   <button class="del-btn" onclick="deleteLog('${log.id}', event)" ${delDisabled} title="${delTitle}">삭제</button>
@@ -794,15 +810,16 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
         }
       }
 
-      // ✅ 추가 질문 버튼 클릭 처리
       const fuBtn = e.target.closest(".followup-btn");
       if (fuBtn) {
         askFollowUp(fuBtn.dataset.card);
         return;
       }
 
+      // ✅ HTML onclick과 중복 방지 — onclick이 없는 버튼에만 이벤트 추가
       document.querySelectorAll("#aiSelectArea button").forEach(btn => {
         if (btn.dataset.aiBound) return;
+        if (btn.hasAttribute("onclick")) return; // ✅ 이게 원인! onclick 있으면 스킵
         btn.dataset.aiBound = "1";
         if (/분석 실행|분석실행|선택한 AI/.test(btn.textContent)) {
           btn.addEventListener("click", runAIAnalysis);
@@ -818,7 +835,6 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
       }
     });
 
-    // ✅ 추가 질문 Enter 키 지원
     document.addEventListener("keydown", e => {
       if (e.key === "Enter" && e.target.classList.contains("followup-input")) {
         const box = e.target.closest(".followup-box");
