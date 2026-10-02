@@ -545,7 +545,8 @@ function renderList() {
     await loadFarmInfo();
     loadWeather();
 
-    const today = new Date();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());  // ✅ 로컬 자정
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
     const eDateEl = document.getElementById("eDate");
