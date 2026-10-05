@@ -11,6 +11,11 @@
   let deviationChart = null;
   let warningChart = null;
 
+  // ✅ 로컬 날짜 → "YYYY-MM-DD" 문자열 (UTC 함정 회피)
+  function toLocalYmd(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
   async function getFs() {
     if (!fs) {
       fs = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js");
@@ -385,51 +390,51 @@
     renderWarningChart();
   }
 
-function renderList() {
-  let filtered = allRecords;
-  if (currentFilter === "ok") filtered = allRecords.filter(r => checkStatus(r).level === "ok");
-  else if (currentFilter === "warn") filtered = allRecords.filter(r => checkStatus(r).level === "warn");
-  else if (currentFilter === "danger") filtered = allRecords.filter(r => checkStatus(r).level === "danger");
+  function renderList() {
+    let filtered = allRecords;
+    if (currentFilter === "ok") filtered = allRecords.filter(r => checkStatus(r).level === "ok");
+    else if (currentFilter === "warn") filtered = allRecords.filter(r => checkStatus(r).level === "warn");
+    else if (currentFilter === "danger") filtered = allRecords.filter(r => checkStatus(r).level === "danger");
 
-  const tb = document.getElementById("reportBody");
-  if (!tb) return;
+    const tb = document.getElementById("reportBody");
+    if (!tb) return;
 
-  if (!filtered.length) { 
-    tb.innerHTML = `<tr><td colspan="15" class="empty-box">데이터가 없습니다.</td></tr>`;
-    return; 
+    if (!filtered.length) { 
+      tb.innerHTML = `<tr><td colspan="15" class="empty-box">데이터가 없습니다.</td></tr>`;
+      return; 
+    }
+
+    tb.innerHTML = filtered.map(r => {
+      const st = checkStatus(r);
+      let rowClass = "";
+      if (st.level === "danger") rowClass = "class='danger-row'";
+      else if (st.level === "warn") rowClass = "class='warn-row'";
+      
+      const zoneLine = `${r.zoneName || "-"} · ${r.line || "V01"}`;
+      
+      const ratioCell = st.ratio == null
+        ? `<span style="color:#999;">-</span>`
+        : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
+
+      return `<tr ${rowClass}>
+        <td>${r.measureDate || "-"}</td>
+        <td>${r.measureTime || "-"}</td>
+        <td>${zoneLine}</td>
+        <td>${r.drainEc || "-"}</td>
+        <td>${st.supEc}</td>
+        <td style="color:${st.statusColor}; font-weight:bold;">${st.ecDev}</td>
+        <td>${r.drainPh || "-"}</td>
+        <td>${st.supPh}</td>
+        <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
+        <td>${r.sampleEc || "-"}</td>
+        <td>${r.samplePh || "-"}</td>
+        <td>${r.bedTemp != null ? r.bedTemp + "℃" : "-"}</td>
+        <td>${r.drainAmount || "-"}${r.supplyEvents ? ` <span style="font-size:9px;color:#888;">(${r.supplyEvents}회)</span>` : ""}</td>
+        <td>${ratioCell}</td>
+        <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
+      </tr>`;
+    }).join("");
   }
-
-  tb.innerHTML = filtered.map(r => {
-    const st = checkStatus(r);
-    let rowClass = "";
-    if (st.level === "danger") rowClass = "class='danger-row'";
-    else if (st.level === "warn") rowClass = "class='warn-row'";
-    
-    const zoneLine = `${r.zoneName || "-"} · ${r.line || "V01"}`;
-    
-    const ratioCell = st.ratio == null
-      ? `<span style="color:#999;">-</span>`
-      : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
-
-    return `<tr ${rowClass}>
-      <td>${r.measureDate || "-"}</td>
-      <td>${r.measureTime || "-"}</td>
-      <td>${zoneLine}</td>
-      <td>${r.drainEc || "-"}</td>
-      <td>${st.supEc}</td>
-      <td style="color:${st.statusColor}; font-weight:bold;">${st.ecDev}</td>
-      <td>${r.drainPh || "-"}</td>
-      <td>${st.supPh}</td>
-      <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
-      <td>${r.sampleEc || "-"}</td>
-      <td>${r.samplePh || "-"}</td>
-      <td>${r.bedTemp != null ? r.bedTemp + "℃" : "-"}</td>
-      <td>${r.drainAmount || "-"}${r.supplyEvents ? ` <span style="font-size:9px;color:#888;">(${r.supplyEvents}회)</span>` : ""}</td>
-      <td>${ratioCell}</td>
-      <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
-    </tr>`;
-  }).join("");
-}
 
   function bindEvents() {
     document.addEventListener("click", e => {
@@ -471,17 +476,17 @@ function renderList() {
     bindEvents();
     await loadFarmInfo();
 
-    // 기본 날짜 설정 (최근 7일)
-    const t = new Date();
-    const eDate = document.getElementById("eDate");
-    const sDate = document.getElementById("sDate");
+    // ✅ 기본 날짜 설정 (최근 7일) — 로컬 날짜 문자열로 직접 설정 (시간대 무관)
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // 로컬 자정
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 6); // 6일 전 = 오늘 포함 7일
+
+    const eDateEl = document.getElementById("eDate");
+    const sDateEl = document.getElementById("sDate");
     
-    if (eDate) eDate.valueAsDate = t;
-    if (sDate) {
-      const startDate = new Date(t);
-      startDate.setDate(t.getDate() - 6);
-      sDate.valueAsDate = startDate;
-    }
+    if (eDateEl) eDateEl.value = toLocalYmd(today);      // ✅ 로컬 문자열 직접 할당
+    if (sDateEl) sDateEl.value = toLocalYmd(startDate);  // ✅ 로컬 문자열 직접 할당
 
     const database = await ensureDb();
     if (!database) return;

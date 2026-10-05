@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  console.log("✅ ai-report.js 로드됨 (v260923)");
+  console.log("✅ ai-report.js 로드됨 (v261002)");
 
   let db = null;
   let fsMod = null;
@@ -20,10 +20,15 @@
   let currentPage = 1;
   let gFarmData = null;
   const followCtx = {};
-  let isRunning = false; // ✅ 중복 실행 방지 플래그
+  let isRunning = false;
 
   const ROLE_ADMIN = "admin";
   const ROLE_MANAGER = "manager";
+
+  // ✅ 로컬 날짜 → "YYYY-MM-DD" 문자열 (UTC 함정 회피)
+  function toLocalYmd(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
 
   // =====================================================
   // ✅ 역할별 맞춤 분석 (과목별 시험지)
@@ -389,26 +394,37 @@ ${recent || "- 없음"}
     }
   }
 
+  // ✅ 프리셋 날짜 설정 — 로컬 날짜 문자열로 직접 설정 (시간대 무관)
   function setPreset() {
     const now = new Date();
     const preset = document.getElementById("datePreset").value;
-    let start = new Date(), end = new Date();
+    let start, end;
+
+    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
     if (preset === "weekday") {
       const day = now.getDay() || 7;
-      start.setDate(now.getDate() - day + 1);
-      end = new Date(start); end.setDate(start.getDate() + 4);
+      start = new Date(todayLocal);
+      start.setDate(todayLocal.getDate() - day + 1);
+      end = new Date(start);
+      end.setDate(start.getDate() + 4);
     } else if (preset === "week") {
       const day = now.getDay() || 7;
-      start.setDate(now.getDate() - day + 1);
-      end = new Date(start); end.setDate(start.getDate() + 6);
+      start = new Date(todayLocal);
+      start.setDate(todayLocal.getDate() - day + 1);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
     } else if (preset === "month") {
       start = new Date(now.getFullYear(), now.getMonth(), 1);
       end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     } else if (preset === "month3") {
-      start = new Date(now); start.setMonth(start.getMonth() - 3);
+      start = new Date(todayLocal);
+      start.setMonth(start.getMonth() - 3);
+      end = new Date(todayLocal);
     } else return;
-    document.getElementById("sDate").valueAsDate = start;
-    document.getElementById("eDate").valueAsDate = end;
+
+    document.getElementById("sDate").value = toLocalYmd(start);
+    document.getElementById("eDate").value = toLocalYmd(end);
     loadSummaryInfo();
   }
 
@@ -474,7 +490,6 @@ ${recent || "- 없음"}
     return res;
   }
 
-  // ✅ 분석 실행 — 중복 실행 완전 차단 + 사전 지시사항 지원
   async function runAIAnalysis() {
     if (isRunning) return alert("이미 분석이 실행 중입니다. 잠시만 기다려주세요.");
     if (!canRunAnalysis()) return alert("분석 실행 권한이 없습니다.");
@@ -486,7 +501,6 @@ ${recent || "- 없음"}
     const eDate = document.getElementById("eDate").value;
     if (!sDate || !eDate) return alert("시작일과 종료일을 지정하세요!");
 
-    // ✅ 사전 지시사항 읽기
     const preInstructions = (document.getElementById("preInstructions").value || "").trim();
 
     isRunning = true;
@@ -530,7 +544,6 @@ ${recent || "- 없음"}
         const roleKey = detectRole(ai);
         const userGuide = (cb.dataset.prompt || "").trim();
 
-        // ✅ 프롬프트에 사전 지시사항 주입
         const prompt = `당신은 스마트팜 딸기 재배 및 배액(드레인) 관리 전문가입니다.
 ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` : ""}${preInstructions ? `\n\n🎯 사용자 특별 지시사항: ${preInstructions}\n(위 지시사항을 우선적으로 반영하여 분석하세요)` : ""}`;
         const dataSummary = buildDataSummary(roleKey, records, sDate, eDate, st);
@@ -601,7 +614,7 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
           const { collection, addDoc } = await getFs();
           const docRef = await addDoc(collection(database, AI_LOG_COLLECTION), {
             aiName, model, period: `${sDate} ~ ${eDate}`, role: ROLE_LABEL[roleKey],
-            preInstructions: preInstructions || null, // ✅ 사전 지시사항 저장
+            preInstructions: preInstructions || null,
             analyzedAt: new Date().toISOString(),
             resultText: text
           });
@@ -726,7 +739,7 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
         aiName: d.data().aiName || "AI",
         period: d.data().period || "-",
         analyzedAt: d.data().analyzedAt,
-        preInstructions: d.data().preInstructions || null // ✅ 사전 지시사항 로딩
+        preInstructions: d.data().preInstructions || null
       }));
       currentPage = 1;
       renderPage();
@@ -816,10 +829,9 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
         return;
       }
 
-      // ✅ HTML onclick과 중복 방지 — onclick이 없는 버튼에만 이벤트 추가
       document.querySelectorAll("#aiSelectArea button").forEach(btn => {
         if (btn.dataset.aiBound) return;
-        if (btn.hasAttribute("onclick")) return; // ✅ 이게 원인! onclick 있으면 스킵
+        if (btn.hasAttribute("onclick")) return;
         btn.dataset.aiBound = "1";
         if (/분석 실행|분석실행|선택한 AI/.test(btn.textContent)) {
           btn.addEventListener("click", runAIAnalysis);
@@ -861,14 +873,16 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
     await loadFarmInfo();
     loadWeather();
 
-    const today = new Date();
-    const weekAgo = new Date();
+    // ✅ 기본 기간: 7일 전 ~ 오늘 (로컬 날짜 문자열로 직접 설정 → 시간대 무관)
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // 로컬 자정
+    const weekAgo = new Date(today);
     weekAgo.setDate(today.getDate() - 7);
 
     const eDateEl = document.getElementById("eDate");
     const sDateEl = document.getElementById("sDate");
-    if (eDateEl) eDateEl.valueAsDate = today;
-    if (sDateEl) sDateEl.valueAsDate = weekAgo;
+    if (eDateEl) eDateEl.value = toLocalYmd(today);      // ✅ 로컬 문자열
+    if (sDateEl) sDateEl.value = toLocalYmd(weekAgo);    // ✅ 로컬 문자열
 
     const database = await ensureDb();
     if (!database) return;

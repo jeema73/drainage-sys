@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  console.log("✅ drain-record.js 로드됨 (v260920)");
+  console.log("✅ drain-record.js 로드됨 (v261002)");
 
   let db = null;
   let fsMod = null;
@@ -19,6 +19,11 @@
 
   function canEdit() { return [ROLE_ADMIN, ROLE_MANAGER, ROLE_WORKER].includes(userRole); }
   function canApprove() { return [ROLE_ADMIN, ROLE_MANAGER].includes(userRole); }
+
+  // ✅ 로컬 날짜 → "YYYY-MM-DD" 문자열 (valueAsDate의 UTC 함정 회피)
+  function toLocalYmd(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
 
   async function getFs() {
     if (!fsMod) {
@@ -326,55 +331,55 @@
     }
   }
 
-function renderList() {
-  const tb = document.getElementById("listBody");
-  if (!tb) return;
+  function renderList() {
+    const tb = document.getElementById("listBody");
+    if (!tb) return;
 
-  if (!lastRecords.length) {
-    tb.innerHTML = `<tr><td colspan="15" class="empty-box">해당 기간에 기록이 없습니다.</td></tr>`;
-    return;
+    if (!lastRecords.length) {
+      tb.innerHTML = `<tr><td colspan="16" class="empty-box">해당 기간에 기록이 없습니다.</td></tr>`;
+      return;
+    }
+
+    const editOk = canEdit();
+    const apprOk = canApprove();
+
+    tb.innerHTML = lastRecords.map(r => {
+      const st = checkStatus(r);
+      let rowClass = "";
+      if (st.level === "danger") rowClass = "class='danger-row'";
+      else if (st.level === "warn") rowClass = "class='warn-row'";
+
+      const isApproved = r.approved === true;
+      const zoneLine = `${r.zoneName || "-"} · ${r.line || "V01"}`;
+
+      const ratioCell = st.ratio == null
+        ? `<span style="color:#999;">-</span>`
+        : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
+
+      return `<tr ${rowClass}>
+        <td>${r.measureDate || "-"}</td>
+        <td>${r.measureTime || "-"}</td>
+        <td>${zoneLine}</td>
+        <td>${r.drainEc || "-"}</td>
+        <td>${st.supEc}</td>
+        <td style="color:${st.statusColor}; font-weight:bold;">${st.ecDev}</td>
+        <td>${r.drainPh || "-"}</td>
+        <td>${st.supPh}</td>
+        <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
+        <td>${r.sampleEc || "-"}</td>
+        <td>${r.samplePh || "-"}</td>
+        <td>${r.bedTemp != null ? r.bedTemp + "℃" : "-"}</td>
+        <td>${r.drainAmount || "-"}${r.supplyEvents ? ` <span style="font-size:9px;color:#888;">(${r.supplyEvents}회)</span>` : ""}</td>
+        <td>${ratioCell}</td>
+        <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
+        <td class="action-btns">
+          <button class="btn-sm btn-primary" onclick="editRec('${r.id}')" ${editOk ? "" : "disabled"}>수정</button>
+          <button class="btn-sm btn-secondary" onclick="toggleApprove('${r.id}', ${isApproved})" ${apprOk ? "" : "disabled"}>${isApproved ? "승인취소" : "승인"}</button>
+          <button class="btn-sm btn-danger" onclick="deleteRec('${r.id}')" ${apprOk ? "" : "disabled"}>삭제</button>
+        </td>
+      </tr>`;
+    }).join("");
   }
-
-  const editOk = canEdit();
-  const apprOk = canApprove();
-
-  tb.innerHTML = lastRecords.map(r => {
-    const st = checkStatus(r);
-    let rowClass = "";
-    if (st.level === "danger") rowClass = "class='danger-row'";
-    else if (st.level === "warn") rowClass = "class='warn-row'";
-
-    const isApproved = r.approved === true;
-    const zoneLine = `${r.zoneName || "-"} · ${r.line || "V01"}`;
-    
-    const ratioCell = st.ratio == null
-      ? `<span style="color:#999;">-</span>`
-      : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
-
-    return `<tr ${rowClass}>
-      <td>${r.measureDate || "-"}</td>
-      <td>${r.measureTime || "-"}</td>
-      <td>${zoneLine}</td>
-      <td>${r.drainEc || "-"}</td>
-      <td>${st.supEc}</td>
-      <td style="color:${st.statusColor}; font-weight:bold;">${st.ecDev}</td>
-      <td>${r.drainPh || "-"}</td>
-      <td>${st.supPh}</td>
-      <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
-      <td>${r.sampleEc || "-"}</td>
-      <td>${r.samplePh || "-"}</td>
-      <td>${r.bedTemp != null ? r.bedTemp + "℃" : "-"}</td>
-      <td>${r.drainAmount || "-"}${r.supplyEvents ? ` <span style="font-size:9px;color:#888;">(${r.supplyEvents}회)</span>` : ""}</td>
-      <td>${ratioCell}</td>
-      <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
-      <td class="action-btns">
-        <button class="btn-sm btn-primary" onclick="editRec('${r.id}')" ${editOk ? "" : "disabled"}>수정</button>
-        <button class="btn-sm btn-secondary" onclick="toggleApprove('${r.id}', ${isApproved})" ${apprOk ? "" : "disabled"}>${isApproved ? "승인취소" : "승인"}</button>
-        <button class="btn-sm btn-danger" onclick="deleteRec('${r.id}')" ${apprOk ? "" : "disabled"}>삭제</button>
-      </td>
-    </tr>`;
-  }).join("");
-}
 
   async function saveRecord() {
     if (!canEdit()) return alert("등록/수정 권한이 없습니다.");
@@ -488,13 +493,13 @@ function renderList() {
       alert("✅ 삭제되었습니다!");
       await loadRecords();
     } catch (e) {
-      alert("❌ 삭제 실패: " + e.message);
+      alert("❌ 삭제 실: " + e.message);
     }
   }
 
   function resetForm() {
     document.getElementById("editId").value = "";
-    document.getElementById("measureDate").valueAsDate = new Date();
+    document.getElementById("measureDate").value = toLocalYmd(new Date()); // ✅ 오늘 (로컬 문자열)
     document.getElementById("measureTime").value = new Date().toTimeString().slice(0, 5);
     const zoneSel = document.getElementById("zoneSel");
     if (zoneSel) zoneSel.value = "";
@@ -545,14 +550,15 @@ function renderList() {
     await loadFarmInfo();
     loadWeather();
 
+    // ✅ 조회 기본기간: 어제 ~ 오늘 (로컬 날짜 문자열로 직접 설정 → 시간대 무관)
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());  // ✅ 로컬 자정
-    const yesterday = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     const eDateEl = document.getElementById("eDate");
     const sDateEl = document.getElementById("sDate");
-    if (eDateEl) eDateEl.valueAsDate = today;
-    if (sDateEl) sDateEl.valueAsDate = yesterday;
+    if (eDateEl) eDateEl.value = toLocalYmd(today);
+    if (sDateEl) sDateEl.value = toLocalYmd(yesterday);
 
     const database = await ensureDb();
     if (!database) return;
@@ -585,7 +591,8 @@ function renderList() {
     if (sel) sel.value = "";
     onZoneChange();
 
-    document.getElementById("measureDate").valueAsDate = new Date();
+    // ✅ 등록폼 기본값: 측정일자 = 오늘, 측정시간 = 현재
+    document.getElementById("measureDate").value = toLocalYmd(new Date());
     document.getElementById("measureTime").value = new Date().toTimeString().slice(0, 5);
 
     await loadRecords();

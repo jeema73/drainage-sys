@@ -8,6 +8,11 @@
   let gFarmData = null;
   const FARM_SETTINGS_ID = "current";
 
+  // ✅ 로컬 날짜 → "YYYY-MM-DD" 문자열 (UTC 함정 회피)
+  function toLocalYmd(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
   // Firebase Firestore 모듈 동적 로드
   async function getFs() {
     return await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js");
@@ -319,12 +324,13 @@
     }
   }
 
+  // ✅ 오늘의 배액현황 — 로컬 날짜로 "오늘" 비교
   async function loadDrainStats() {
     const database = await ensureDb();
     if (!database) return;
     const fs = await getFs();
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = toLocalYmd(new Date()); // ✅ 로컬 오늘 날짜
       const snap = await fs.getDocs(fs.collection(database, "drain_records"));
       let cnt = 0, ecS = 0, phS = 0, tS = 0, ecC = 0, phC = 0, tC = 0;
       snap.forEach(d => {
@@ -356,16 +362,16 @@
     }
   }
 
-  // ✅ 최근 7일 배액율 통계
+  // ✅ 최근 7일 배액율 통계 — 로컬 날짜로 7일 계산
   async function loadRatioStats() {
     const database = await ensureDb();
     if (!database) return;
     const fs = await getFs();
     try {
-      const today = new Date();
-      const weekAgo = new Date();
-      weekAgo.setDate(today.getDate() - 6); // 최근 7일
-      const startDate = weekAgo.toISOString().slice(0, 10);
+      const now = new Date();
+      const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // ✅ 로컬 자정 기준
+      weekAgo.setDate(weekAgo.getDate() - 6); // 최근 7일 (오늘 포함)
+      const startDate = toLocalYmd(weekAgo); // ✅ 로컬 날짜 문자열
 
       const snap = await fs.getDocs(fs.collection(database, "drain_records"));
       let ratioOk = 0, ratioWarn = 0, ratioDanger = 0, ratioNone = 0;
