@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  console.log("✅ print-page.js 로드됨");
+  console.log("✅ print-page.js 로드됨 (v261002)");
 
   let db = null;
   let fsMod = null;
@@ -12,6 +12,18 @@
   let displayZones = [];
   let standards = [];
   let supplySettings = [];
+
+  // ✅ 측정일(D)의 공급일(D-1) 문자열 반환 (컵의 물은 전날 공급의 결과)
+  function getSupplyDateStr(measureDate) {
+    const d = new Date(measureDate + "T00:00:00");
+    d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  // ✅ 로컬 날짜 → "YYYY-MM-DD" 문자열 (UTC 함정 회피)
+  function toLocalYmd(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
 
   async function getFs() {
     if (!fsMod) {
@@ -168,13 +180,15 @@
   }
 
   // ✅ 배액율 = 배액량(L) ÷ (기록의 횟수 × 기준 1회 급액량) × 100
+  // ✅ 기준 셋팅은 공급일(D-1) 기준으로 조회
   function getRatio(r) {
     if (!r) return null;
     const recLine = r.line || r.lineNo || "V01";
     const drainMl = parseFloat(r.drainAmount);
     const events = parseFloat(r.supplyEvents);
     if (isNaN(drainMl) || drainMl <= 0 || isNaN(events) || events <= 0) return null;
-    const ss = supplySettings.filter(s => (s.lineNo || s.line || "V01") === recLine && s.settingDate <= r.measureDate)
+    const supplyDateStr = getSupplyDateStr(r.measureDate); // ✅ 공급일(D-1)
+    const ss = supplySettings.filter(s => (s.lineNo || s.line || "V01") === recLine && s.settingDate <= supplyDateStr)
       .sort((a, b) => b.settingDate.localeCompare(a.settingDate))[0];
     if (!ss) return null;
     const perEventL = (parseFloat(ss.minutesPerEvent) / 60) * parseFloat(ss.flowRatePerBag);
@@ -301,7 +315,6 @@
         if (matchedZone) zoneData[matchedZone.zoneName] = r;
       });
 
-      // ✅ 날짜/시간 셀은 4행(EC/pH/온도배액량/배액율)을 묶음
       html += `<tr>`;
       html += `<td rowspan="4">${dt.replace(/-/g, ".")}</td>`;
       html += `<td rowspan="4">${firstTime}</td>`;
@@ -343,7 +356,6 @@
       });
       html += `</tr>`;
 
-      // ✅ 배액율 행 — 항목칸 + 구역칸 (샘플 구역은 2칸 병합)
       html += `<tr><td>배액율</td>`;
       displayZones.forEach(z => {
         if (!z) return;
@@ -395,7 +407,6 @@
         if (matchedZone) zoneData[matchedZone.zoneName] = r;
       });
 
-      // 1️⃣ EC 행
       csv += `"${dt}","${firstTime}","EC"`;
       displayZones.filter(Boolean).forEach(z => {
         const r = zoneData[z.zoneName];
@@ -404,7 +415,6 @@
       });
       csv += "\n";
 
-      // 2️⃣ pH 행
       csv += `"${dt}","${firstTime}","pH"`;
       displayZones.filter(Boolean).forEach(z => {
         const r = zoneData[z.zoneName];
@@ -413,7 +423,6 @@
       });
       csv += "\n";
 
-      // 3️⃣ 온도/배액량 행 (온도 + 배액량)
       csv += `"${dt}","${firstTime}","온도/배액량"`;
       displayZones.filter(Boolean).forEach(z => {
         const r = zoneData[z.zoneName];
@@ -424,7 +433,6 @@
       });
       csv += "\n";
 
-      // 4️⃣ 배액율 행 (샘플 구역은 칸 맞추기 위해 2칸 사용)
       csv += `"${dt}","${firstTime}","배액율"`;
       displayZones.filter(Boolean).forEach(z => {
         const r = zoneData[z.zoneName];
@@ -461,7 +469,6 @@
       }
     });
 
-    // HTML의 onclick과 중복 방지를 위해, 해당 버튼에 onclick이 없을 때만 리스너 추가
     const loadBtn = document.querySelector("button.btn-primary");
     if (loadBtn && !loadBtn.hasAttribute("onclick")) {
       loadBtn.addEventListener("click", loadData);
@@ -484,25 +491,25 @@
     await loadFarmInfo();
     loadWeather();
 
-    // 기본 기간: 이번주 월~금
-    const today = new Date();
-    const day = today.getDay() || 7;
-    const mon = new Date(today);
-    mon.setDate(today.getDate() - day + 1);
+    // ✅ 기본 기간: 이번주 월~금 (로컬 날짜 문자열로 설정 → 시간대 무관)
+    const now = new Date();
+    const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const day = now.getDay() || 7;
+    const mon = new Date(todayLocal);
+    mon.setDate(todayLocal.getDate() - day + 1);
     const fri = new Date(mon);
     fri.setDate(mon.getDate() + 4);
 
     const sDateEl = document.getElementById("sDate");
     const eDateEl = document.getElementById("eDate");
-    if (sDateEl) sDateEl.valueAsDate = mon;
-    if (eDateEl) eDateEl.valueAsDate = fri;
+    if (sDateEl) sDateEl.value = toLocalYmd(mon);
+    if (eDateEl) eDateEl.value = toLocalYmd(fri);
 
     await loadZones();
     await loadStandards();
     await loadData();
   }
 
-  // HTML onclick에서 호출 가능하도록 전역 노출
   window.loadData = loadData;
   window.exportCSV = exportCSV;
 

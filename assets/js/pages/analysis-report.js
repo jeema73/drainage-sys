@@ -69,6 +69,13 @@
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
+  // ✅ 측정일(D)의 공급일(D-1) 문자열 반환 (컵의 물은 전날 공급의 결과)
+  function getSupplyDateStr(measureDate) {
+    const d = new Date(measureDate + "T00:00:00");
+    d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
   async function loadFarmInfo() {
     const database = await ensureDb();
     if (!database) return;
@@ -100,9 +107,10 @@
   function checkStatus(r) {
     const recLine = r.line || r.lineNo || "V01";
 
+    const supplyDateStr = getSupplyDateStr(r.measureDate);
     const std = standards.filter(s => {
       const stdLine = s.lineNo || s.line || "V01";
-      return s.standardDate <= r.measureDate && stdLine === recLine;
+      return s.standardDate <= supplyDateStr && stdLine === recLine;
     }).sort((a, b) => b.standardDate.localeCompare(a.standardDate))[0];
 
     if (!std) {
@@ -140,7 +148,7 @@
     const drainMl = parseFloat(r.drainAmount);
     const ss = supplySettings.filter(s => {
       const ssLine = s.lineNo || s.line || "V01";
-      return ssLine === recLine && s.settingDate <= r.measureDate;
+      return ssLine === recLine && s.settingDate <= supplyDateStr;
     }).sort((a, b) => b.settingDate.localeCompare(a.settingDate))[0];
 
     const events = parseFloat(r.supplyEvents);

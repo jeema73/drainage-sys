@@ -25,6 +25,13 @@
   const ROLE_ADMIN = "admin";
   const ROLE_MANAGER = "manager";
 
+
+   function getSupplyDateStr(measureDate) {
+    const d = new Date(measureDate + "T00:00:00");
+    d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  } 
+
   // ✅ 로컬 날짜 → "YYYY-MM-DD" 문자열 (UTC 함정 회피)
   function toLocalYmd(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -181,6 +188,14 @@ ${recent || "- 없음"}
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
+  // ✅ 측정일(D)의 공급일(D-1) 문자열 반환 (컵의 물은 전날 공급의 결과)
+  function getSupplyDateStr(measureDate) {
+    const d = new Date(measureDate + "T00:00:00");
+    d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+
   async function loadFarmInfo() {
     const database = await ensureDb();
     if (!database) return;
@@ -211,9 +226,11 @@ ${recent || "- 없음"}
 
   function checkStatus(r) {
     const recLine = r.line || r.lineNo || "V01";
+    const supplyDateStr = getSupplyDateStr(r.measureDate);
+    const supplyDateStr = getSupplyDateStr(r.measureDate);
     const std = standards.filter(s => {
       const stdLine = s.lineNo || s.line || "V01";
-      return s.standardDate <= r.measureDate && stdLine === recLine;
+      return s.standardDate <= supplyDateStr && stdLine === recLine;
     }).sort((a, b) => b.standardDate.localeCompare(a.standardDate))[0];
 
     if (!std) {
@@ -244,23 +261,20 @@ ${recent || "- 없음"}
     if (ecLevel === "danger" || phLevel === "danger") level = "danger";
     else if (ecLevel === "warn" || phLevel === "warn") level = "warn";
 
-    let ratio = null, ratioLevel = "none", supplyCount = null, dailyL = 0;
+    let ratio = null, ratioLevel = "none", supplyCount = null;
     const targetRate = parseFloat(std.drainRate) || null;
     const drainMl = parseFloat(r.drainAmount);
+    const events = parseFloat(r.supplyEvents); // ✅ 기록의 실측 횟수
     const ss = supplySettings.filter(s => {
       const ssLine = s.lineNo || s.line || "V01";
-      return ssLine === recLine && s.settingDate <= r.measureDate;
+      return ssLine === recLine && s.settingDate <= supplyDateStr; // ✅ D-1 기준
     }).sort((a, b) => b.settingDate.localeCompare(a.settingDate))[0];
 
-    if (ss) {
-      supplyCount = (parseFloat(ss.eventsPerDay) || 0) + (parseFloat(ss.addEventsPerDay) || 0) || null;
-      dailyL = parseFloat(ss.dailySupplyL) || 0;
-      if (!(dailyL > 0)) {
-        const totalMin = (parseFloat(ss.minutesPerEvent) || 0) * (parseFloat(ss.eventsPerDay) || 0)
-          + (parseFloat(ss.addEventsPerDay) || 0) * (parseFloat(ss.addMinutesPerEvent) || 0);
-        dailyL = (totalMin / 60) * (parseFloat(ss.flowRatePerBag) || 0);
-      }
-      if (dailyL > 0 && !isNaN(drainMl) && drainMl > 0) {
+    if (ss && events > 0 && !isNaN(drainMl) && drainMl > 0) {
+      const perEventL = (parseFloat(ss.minutesPerEvent) / 60) * parseFloat(ss.flowRatePerBag);
+      const dailyL = perEventL * events;
+      supplyCount = events;
+      if (dailyL > 0) {
         ratio = (drainMl / 1000) / dailyL * 100;
         if (targetRate) {
           const ad = Math.abs(ratio - targetRate);
