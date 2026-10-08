@@ -217,7 +217,7 @@ ${recent || "- 없음"}
       console.error("농장설정 오류:", e);
     }
   }
-
+   
   function checkStatus(r) {
     const recLine = r.line || r.lineNo || "V01";
     const supplyDateStr = getSupplyDateStr(r.measureDate);
