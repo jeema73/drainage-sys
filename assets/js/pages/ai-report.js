@@ -26,12 +26,6 @@
   const ROLE_MANAGER = "manager";
 
 
-   function getSupplyDateStr(measureDate) {
-    const d = new Date(measureDate + "T00:00:00");
-    d.setDate(d.getDate() - 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  } 
-
   // ✅ 로컬 날짜 → "YYYY-MM-DD" 문자열 (UTC 함정 회피)
   function toLocalYmd(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
