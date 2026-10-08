@@ -227,7 +227,6 @@ ${recent || "- 없음"}
   function checkStatus(r) {
     const recLine = r.line || r.lineNo || "V01";
     const supplyDateStr = getSupplyDateStr(r.measureDate);
-    const supplyDateStr = getSupplyDateStr(r.measureDate);
     const std = standards.filter(s => {
       const stdLine = s.lineNo || s.line || "V01";
       return s.standardDate <= supplyDateStr && stdLine === recLine;
