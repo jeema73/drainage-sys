@@ -10,11 +10,7 @@
   let currentFilter = "all";
   let deviationChart = null;
   let warningChart = null;
-
-  // ✅ 로컬 날짜 → "YYYY-MM-DD" 문자열 (UTC 함정 회피)
-  function toLocalYmd(d) {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }
+  let ratioTrendChart = null;
 
   async function getFs() {
     if (!fs) {
@@ -28,154 +24,15 @@
     if (typeof window.initFirebaseIfNeeded === "function") {
       db = await window.initFirebaseIfNeeded();
     }
-    if (!db) {
-      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js");
-      const { getFirestore } = await getFs();
-      const firebaseConfig = {
-        apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
-        authDomain: "smartfarm-drainage-system.firebaseapp.com",
-        projectId: "smartfarm-drainage-system",
-        storageBucket: "smartfarm-drainage-system.firebasestorage.app",
-        messagingSenderId: "699907108321",
-        appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
-        measurementId: "G-W7L21Y8JZN"
-      };
-      const app = initializeApp(firebaseConfig);
-      db = getFirestore(app);
-    }
     return db;
   }
 
-  function getRoleName(role) {
-    const map = { admin: "최고관리자", manager: "매니저", worker: "공공근로자", guest: "게스트" };
-    return map[role] || role;
-  }
-
-  function applyMenuPermissions(role) {
-    document.querySelectorAll(".sidebar-menu a").forEach(link => {
-      const allowedRoles = (link.dataset.role || "all").split(",");
-      if (allowedRoles.includes("all") || allowedRoles.includes(role)) {
-        link.classList.add("visible");
-      } else {
-        link.classList.remove("visible");
-      }
-    });
-  }
-
-  function formatDateYmd(dateStr) {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-
-  // ✅ 측정일(D)의 공급일(D-1) 문자열 반환 (컵의 물은 전날 공급의 결과)
-  function getSupplyDateStr(measureDate) {
-    const d = new Date(measureDate + "T00:00:00");
-    d.setDate(d.getDate() - 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }
-
-  async function loadFarmInfo() {
-    const database = await ensureDb();
-    if (!database) return;
-    const { doc, getDoc } = await getFs();
-    try {
-      const snap = await getDoc(doc(database, "settings", "current"));
-      const topFarmNameEl = document.getElementById("topFarmName");
-      const topMetaEl = document.getElementById("topFarmMeta");
-      if (snap.exists()) {
-        const farm = snap.data();
-        if (topFarmNameEl) topFarmNameEl.textContent = farm.farmName || "강북구 스마트팜 재배단지";
-        if (topMetaEl) {
-          topMetaEl.innerHTML = `
-            <span>🌿 재배작물: ${farm.cropType || "딸기"}</span>
-            <span>🍓 품종: ${farm.variety || "금실"}</span>
-            <span>🌱 정식일: ${formatDateYmd(farm.plantingDate)}</span>
-          `;
-        }
-      } else {
-        if (topFarmNameEl) topFarmNameEl.textContent = "강북구 스마트팜 재배단지";
-        if (topMetaEl) topMetaEl.innerHTML = `<span style="color:#ffd700;">⚠️ 농장설정 미등록</span>`;
-      }
-    } catch (e) {
-      console.error("농장정보 오류:", e);
-    }
-  }
-
-  // ✅ 상태 판정 (EC/pH + 배액율)
+  // ✅ 상태 판정 — common.js 공통 로직 활용
   function checkStatus(r) {
-    const recLine = r.line || r.lineNo || "V01";
-
-    const supplyDateStr = getSupplyDateStr(r.measureDate);
-    const std = standards.filter(s => {
-      const stdLine = s.lineNo || s.line || "V01";
-      return s.standardDate <= supplyDateStr && stdLine === recLine;
-    }).sort((a, b) => b.standardDate.localeCompare(a.standardDate))[0];
-
-    if (!std) {
-      return { level: "none", ecDev: "-", phDev: "-", supEc: "-", supPh: "-", statusText: "기준없음", statusColor: "#888", ratio: null, ratioColor: "#999", targetRate: null };
+    if (typeof window.calcDrainStatus === "function") {
+      return window.calcDrainStatus(r, standards, supplySettings);
     }
-
-    const rawEc = (std.targetEc !== undefined && std.targetEc !== null && std.targetEc !== "") ? std.targetEc : std.supplyEc;
-    const rawPh = (std.targetPh !== undefined && std.targetPh !== null && std.targetPh !== "") ? std.targetPh : std.supplyPh;
-    const supEc = parseFloat(rawEc) || 0;
-    const supPh = parseFloat(rawPh) || 0;
-
-    const drainEc = parseFloat(r.drainEc);
-    const drainPh = parseFloat(r.drainPh);
-    const compEc = supEc + 0.2;
-    const ecDev = (drainEc - compEc).toFixed(2);
-    const phDev = (drainPh - supPh).toFixed(2);
-    const eD = parseFloat(ecDev);
-    const pD = parseFloat(phDev);
-
-    let ecLevel = "ok";
-    if (eD >= 0.7 || eD <= -0.5) ecLevel = "danger";
-    else if ((eD >= 0.4 && eD <= 0.6) || (eD <= -0.31 && eD >= -0.4)) ecLevel = "warn";
-
-    let phLevel = "ok";
-    if (pD >= 0.9 || pD <= -0.7 || drainPh >= 6.8 || drainPh <= 5.2) phLevel = "danger";
-    else if ((pD >= 0.5 && pD <= 0.8) || (pD <= -0.41 && pD >= -0.6)) phLevel = "warn";
-
-    let level = "ok";
-    if (ecLevel === "danger" || phLevel === "danger") level = "danger";
-    else if (ecLevel === "warn" || phLevel === "warn") level = "warn";
-
-    // ✅ 배액율 = 배액량(mL→L) ÷ 24h 급액량(L·포대당) × 100
-    let ratio = null, ratioLevel = "none";
-    const targetRate = parseFloat(std.drainRate) || null;
-    const drainMl = parseFloat(r.drainAmount);
-    const ss = supplySettings.filter(s => {
-      const ssLine = s.lineNo || s.line || "V01";
-      return ssLine === recLine && s.settingDate <= supplyDateStr;
-    }).sort((a, b) => b.settingDate.localeCompare(a.settingDate))[0];
-
-    const events = parseFloat(r.supplyEvents);
-    if (ss && events > 0 && !isNaN(drainMl) && drainMl > 0) {
-      const perEventL = (parseFloat(ss.minutesPerEvent) / 60) * parseFloat(ss.flowRatePerBag);
-      const dailyL = perEventL * events;
-      if (dailyL > 0) {
-        ratio = (drainMl / 1000) / dailyL * 100;
-
-        if (targetRate) {
-          const ad = Math.abs(ratio - targetRate);
-          ratioLevel = ad <= 10 ? "ok" : ad <= 20 ? "warn" : "danger";
-        }
-      }
-    }
-
-    const ratioColor = ratioLevel === "ok" ? "#2e7d32" : ratioLevel === "warn" ? "#ef6c00" : ratioLevel === "danger" ? "#c62828" : "#999";
-
-    return {
-      level, ecDev, phDev,
-      supEc: rawEc !== undefined && rawEc !== null && rawEc !== "" ? rawEc : "-",
-      supPh: rawPh !== undefined && rawPh !== null && rawPh !== "" ? rawPh : "-",
-      statusText: level === "danger" ? "🚨 경고" : level === "warn" ? "⚠️ 주의" : "✅ 정상",
-      statusColor: level === "danger" ? "#c62828" : level === "warn" ? "#ef6c00" : "#2e7d32",
-      ratio: ratio === null ? null : Math.round(ratio * 10) / 10,
-      ratioColor, targetRate
-    };
+    return { level: "none", ecDev: "-", phDev: "-", supEc: "-", supPh: "-", statusText: "기준없음", statusColor: "#888", ratio: null, ratioColor: "#999", targetRate: null };
   }
 
   function zoneCompare(a, b) {
@@ -197,27 +54,6 @@
     return ax.localeCompare(bx, "ko");
   }
 
-  function localCheckAuth() {
-    const userStr = localStorage.getItem("user") || localStorage.getItem("user ");
-    const user = userStr ? JSON.parse(userStr) : null;
-    const userRole = (localStorage.getItem("userRole") || localStorage.getItem("userRole ") || "").trim();
-
-    if (!user || !user.userId || !userRole) {
-      location.href = "index.html";
-      return null;
-    }
-
-    const userNameEl = document.getElementById("sidebarUserName");
-    if (userNameEl) userNameEl.textContent = `${user.userName || user.userId || "사용자"} ${getRoleName(userRole)}`;
-
-    applyMenuPermissions(userRole);
-
-    const adminArea = document.getElementById("adminArea");
-    if (adminArea) adminArea.style.display = "block";
-
-    return { user, userRole };
-  }
-
   function renderDeviationChart() {
     if (typeof Chart === "undefined") {
       console.warn("Chart.js가 로드되지 않았습니다.");
@@ -225,9 +61,9 @@
     }
 
     let filtered = allRecords;
-    if (currentFilter === "ok") filtered = allRecords.filter(r => checkStatus(r).level === "ok");
-    else if (currentFilter === "warn") filtered = allRecords.filter(r => checkStatus(r).level === "warn");
-    else if (currentFilter === "danger") filtered = allRecords.filter(r => checkStatus(r).level === "danger");
+    if (currentFilter === "ok") filtered = allRecords.filter((r) => checkStatus(r).level === "ok");
+    else if (currentFilter === "warn") filtered = allRecords.filter((r) => checkStatus(r).level === "warn");
+    else if (currentFilter === "danger") filtered = allRecords.filter((r) => checkStatus(r).level === "danger");
 
     if (!filtered.length) {
       if (deviationChart) deviationChart.destroy();
@@ -236,7 +72,7 @@
     }
 
     const byDate = {};
-    filtered.forEach(r => {
+    filtered.forEach((r) => {
       const d = r.measureDate;
       if (!byDate[d]) byDate[d] = { ecSum: 0, phSum: 0, cnt: 0 };
       const st = checkStatus(r);
@@ -248,29 +84,40 @@
     });
 
     const dates = Object.keys(byDate).sort((a, b) => a.localeCompare(b));
-    const ecAvgs = dates.map(d => (byDate[d].ecSum / byDate[d].cnt).toFixed(2));
-    const phAvgs = dates.map(d => (byDate[d].phSum / byDate[d].cnt).toFixed(2));
+    const ecAvgs = dates.map((d) => (byDate[d].ecSum / byDate[d].cnt).toFixed(2));
+    const phAvgs = dates.map((d) => (byDate[d].phSum / byDate[d].cnt).toFixed(2));
 
     const canvas = document.getElementById("deviationChart");
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
     if (deviationChart) deviationChart.destroy();
-    
+
     deviationChart = new Chart(ctx, {
       type: "line",
       data: {
-        labels: dates.map(d => d.slice(5)),
+        labels: dates.map((d) => d.slice(5)),
         datasets: [
           { label: "EC 편차", data: ecAvgs, borderColor: "#1976d2", backgroundColor: "rgba(25,118,210,0.08)", borderWidth: 2.5, tension: 0.3, fill: false, pointRadius: 4, pointBackgroundColor: "#1976d2" },
           { label: "pH 편차", data: phAvgs, borderColor: "#388e3c", backgroundColor: "rgba(56,142,60,0.08)", borderWidth: 2.5, tension: 0.3, fill: false, pointRadius: 4, pointBackgroundColor: "#388e3c" }
         ]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: "top", labels: { usePointStyle: true, boxWidth: 6, font: { size: 11 } } }, tooltip: { backgroundColor: "#222", padding: 10, titleFont: { size: 12 }, bodyFont: { size: 12 } } },
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "top", labels: { usePointStyle: true, boxWidth: 6, font: { size: 11 } } },
+          tooltip: { backgroundColor: "#222", padding: 10, titleFont: { size: 12 }, bodyFont: { size: 12 } }
+        },
         scales: {
-          y: { title: { display: true, text: "평균 편차", font: { size: 11 } }, grid: { color: "#e8e8e8" }, ticks: { font: { size: 11 } } },
+          y: {
+            title: { display: true, text: "평균 편차", font: { size: 11 } },
+            grid: {
+              color: (ctx) => (ctx.tick && ctx.tick.value === 0 ? "rgba(46, 125, 50, 0.6)" : "#e8e8e8"),
+              lineWidth: (ctx) => (ctx.tick && ctx.tick.value === 0 ? 2 : 1)
+            },
+            ticks: { font: { size: 11 } }
+          },
           x: { grid: { display: false }, ticks: { font: { size: 11 } } }
         },
         interaction: { mode: "index", intersect: false }
@@ -282,7 +129,7 @@
     if (typeof Chart === "undefined") return;
 
     const byDate = {};
-    allRecords.forEach(r => {
+    allRecords.forEach((r) => {
       const d = r.measureDate;
       if (!byDate[d]) byDate[d] = { warn: 0, danger: 0 };
       const level = checkStatus(r).level;
@@ -291,8 +138,8 @@
     });
 
     const dates = Object.keys(byDate).sort((a, b) => a.localeCompare(b));
-    const warnData = dates.map(d => byDate[d].warn);
-    const dangerData = dates.map(d => byDate[d].danger);
+    const warnData = dates.map((d) => byDate[d].warn);
+    const dangerData = dates.map((d) => byDate[d].danger);
 
     const canvas = document.getElementById("warningChart");
     if (!canvas) return;
@@ -303,60 +150,72 @@
     warningChart = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: dates.map(d => d.slice(5)),
+        labels: dates.map((d) => d.slice(5)),
         datasets: [
           { label: "주의", data: warnData, backgroundColor: "#ffcc00", borderRadius: 3 },
           { label: "경고", data: dangerData, backgroundColor: "#e53935", borderRadius: 3 }
         ]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: "top", labels: { usePointStyle: true, boxWidth: 6, font: { size: 11 } } }, tooltip: { backgroundColor: "#222", padding: 10, titleFont: { size: 12 }, bodyFont: { size: 12 } } },
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "top", labels: { usePointStyle: true, boxWidth: 6, font: { size: 11 } } },
+          tooltip: { backgroundColor: "#222", padding: 10, titleFont: { size: 12 }, bodyFont: { size: 12 } }
+        },
         scales: {
-          y: { title: { display: true, text: "건수", font: { size: 11 } }, beginAtZero: true, ticks: { font: { size: 11 }, stepSize: 1 } },
-          x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+          x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: "#e8e8e8" } }
         }
       }
     });
   }
 
-  function setFilter(level) {
-    currentFilter = level;
-    document.querySelectorAll(".status-filter-box button").forEach(btn => btn.classList.remove("active"));
-    const activeBtn = document.querySelector(`button[data-filter="${level}"]`);
-    if (activeBtn) activeBtn.classList.add("active");
-    
+  function setFilter(type) {
+    currentFilter = type;
+    document.querySelectorAll(".status-filter-box button").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.filter === type);
+    });
     renderList();
     renderDeviationChart();
-    renderWarningChart();
   }
 
   async function applyFilter() {
+    const sDate = document.getElementById("sDate").value;
+    const eDate = document.getElementById("eDate").value;
+    const zVal = document.getElementById("zoneSel").value;
+
     const database = await ensureDb();
     if (!database) return;
     const { collection, getDocs } = await getFs();
 
-    const s = document.getElementById("sDate").value;
-    const e = document.getElementById("eDate").value;
-    const z = document.getElementById("zoneSel").value;
+    try {
+      const snap = await getDocs(collection(database, "drain_records"));
+      let list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-    const snap = await getDocs(collection(database, "drain_records"));
-    allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (sDate) list = list.filter((r) => r.measureDate >= sDate);
+      if (eDate) list = list.filter((r) => r.measureDate <= eDate);
+      if (zVal) list = list.filter((r) => r.zoneName === zVal);
 
-    if (s) allRecords = allRecords.filter(r => r.measureDate >= s);
-    if (e) allRecords = allRecords.filter(r => r.measureDate <= e);
-    if (z) allRecords = allRecords.filter(r => r.zoneName === z);
+      list.sort((a, b) => {
+        const dtA = `${a.measureDate} ${a.measureTime || ""}`;
+        const dtB = `${b.measureDate} ${b.measureTime || ""}`;
+        if (dtA !== dtB) return dtB.localeCompare(dtA);
+        return (a.zoneName || "").localeCompare(b.zoneName || "");
+      });
 
-    allRecords.sort((a, b) => {
-      const dCmp = String(a.measureDate || "").localeCompare(String(b.measureDate || ""));
-      if (dCmp !== 0) return dCmp;
-      return zoneCompare(a, b);
-    });
+      allRecords = list;
+      updateSummary();
+    } catch (e) {
+      console.error("분석데이터 조회 오류", e);
+    }
+  }
 
+  function updateSummary() {
     const cntAll = allRecords.length;
     let cntOk = 0, cntWarn = 0, cntDanger = 0;
-    
-    allRecords.forEach(r => {
+
+    allRecords.forEach((r) => {
       const st = checkStatus(r);
       if (st.level === "danger") cntDanger++;
       else if (st.level === "warn") cntWarn++;
@@ -374,7 +233,7 @@
     if (fDanger) fDanger.textContent = cntDanger;
 
     let ecDevSum = 0, sEcDevSum = 0, ecDevCnt = 0, sEcDevCnt = 0;
-    allRecords.forEach(r => {
+    allRecords.forEach((r) => {
       const st = checkStatus(r);
       if (st.ecDev !== "-") { ecDevSum += Math.abs(parseFloat(st.ecDev)); ecDevCnt++; }
       if (r.sampleEc && st.supEc !== "-") {
@@ -383,59 +242,320 @@
       }
     });
 
+    let ratioSum = 0, ratioCnt = 0;
+    allRecords.forEach((r) => {
+      const st = checkStatus(r);
+      if (st.ratio != null) {
+        ratioSum += st.ratio;
+        ratioCnt++;
+      }
+    });
+
     const aCount = document.getElementById("aCount");
     const ecDev = document.getElementById("ecDev");
     const sEcDev = document.getElementById("sEcDev");
     const wCount = document.getElementById("wCount");
+    const avgRatioEl = document.getElementById("avgRatioText");
 
     if (aCount) aCount.textContent = cntAll + "건";
     if (ecDev) ecDev.textContent = ecDevCnt ? (ecDevSum / ecDevCnt).toFixed(2) : "-";
     if (sEcDev) sEcDev.textContent = sEcDevCnt ? (sEcDevSum / sEcDevCnt).toFixed(2) : "-";
     if (wCount) wCount.textContent = (cntWarn + cntDanger) + "건";
+    if (avgRatioEl) avgRatioEl.textContent = ratioCnt ? (ratioSum / ratioCnt).toFixed(1) + "%" : "-";
 
+    generatePrescription();
+    renderZoneSummary();
     renderList();
     renderDeviationChart();
     renderWarningChart();
+    renderRatioTrendChart();
+  }
+
+  // 🏥 1. 오늘의 종합 배액 진단 & 맞춤 처방전 생성
+  function generatePrescription() {
+    const cardEl = document.getElementById("prescriptionCard");
+    const contentEl = document.getElementById("prescriptionContent");
+    const badgeEl = document.getElementById("overallBadge");
+    if (!contentEl) return;
+
+    if (!allRecords.length) {
+      contentEl.innerHTML = "선택된 기간에 분석할 배액 측정 데이터가 없습니다.";
+      if (badgeEl) { badgeEl.textContent = "데이터 없음"; badgeEl.style.background = "#888"; }
+      return;
+    }
+
+    let devSum = 0, devCnt = 0;
+    let phSum = 0, phCnt = 0;
+    let ratioSum = 0, ratioCnt = 0;
+    let dangerCount = 0;
+
+    allRecords.forEach((r) => {
+      const st = checkStatus(r);
+      if (st.level === "danger") dangerCount++;
+      if (st.ecDev !== "-") { devSum += parseFloat(st.ecDev); devCnt++; }
+      if (r.drainPh) { phSum += parseFloat(r.drainPh); phCnt++; }
+      if (st.ratio != null) { ratioSum += st.ratio; ratioCnt++; }
+    });
+
+    const avgDev = devCnt ? devSum / devCnt : 0;
+    const avgPh = phCnt ? phSum / phCnt : 0;
+    const avgRatio = ratioCnt ? ratioSum / ratioCnt : null;
+
+    const advices = [];
+
+    // ① EC 흡수율 및 염류 집적 진단
+    if (avgDev >= 0.4) {
+      advices.push(`🚨 <strong>비료염 농축(과잉) 주의</strong>: 배액 EC가 기준보다 평균 <b>+${avgDev.toFixed(2)}</b> 높게 배출되고 있습니다. 작물이 비료보다 물을 더 많이 빨아들여 배지에 비료염이 쌓이고 있습니다.<br>
+      ➔ <u>조치</u>: 1회 급액량을 10% 늘려 배액을 충분히 빼내거나, 양액기 공급 EC를 0.1~0.2 낮추어 배지 내 농도 장해를 예방하세요.`);
+    } else if (avgDev <= -0.3) {
+      advices.push(`🌿 <strong>양분 흡수 왕성/비료 부족</strong>: 배액 EC가 기준보다 평균 <b>${avgDev.toFixed(2)}</b> 낮습니다. 뿌리가 비료를 왕성하게 흡수하고 있거나 공급 비료가 부족한 상태입니다.<br>
+      ➔ <u>조치</u>: 초세와 생육 상태를 확인한 후 공급 EC를 0.1 정도 상향 조정을 검토하세요.`);
+    } else {
+      advices.push(`✅ <strong>영양 밸런스 최적</strong>: 배액 EC 편차가 평균 <b>${avgDev >= 0 ? "+" : ""}${avgDev.toFixed(2)}</b>로 작물의 비료 흡수와 공급 밸런스가 매우 양호합니다.`);
+    }
+
+    // ② 수분 밸런스(배액율) 진단
+    if (avgRatio !== null) {
+      if (avgRatio < 12) {
+        advices.push(`🚨 <strong>과소배액(배지 건조 위험)</strong>: 평균 배액율이 <b>${avgRatio.toFixed(1)}%</b>로 기준(15~25%)보다 너무 낮습니다. 뿌리 끝이 마르고 염류가 농축될 위험이 큽니다.<br>
+        ➔ <u>조치</u>: 하루 공급 횟수(회)를 1~2회 추가하거나 1회 공급시간(분)을 늘려 충분한 배액이 나오도록 유도하세요.`);
+      } else if (avgRatio > 32) {
+        advices.push(`⚠️ <strong>과관수(뿌리 과습 위험)</strong>: 평균 배액율이 <b>${avgRatio.toFixed(1)}%</b>로 과다 배출 중입니다. 뿌리가 숨을 쉬지 못해 활력이 떨어질 수 있습니다.<br>
+        ➔ <u>조치</u>: 1회 공급시간을 줄이거나 공급 간격을 넓혀 배지 내 공기층(산소)을 확보해 주세요.`);
+      } else {
+        advices.push(`✅ <strong>수분 밸런스 최적</strong>: 평균 배액율이 <b>${avgRatio.toFixed(1)}%</b>로 고설베드 적정 수분 상태를 안정적으로 유지하고 있습니다.`);
+      }
+    }
+
+    // ③ pH 진단
+    if (avgPh > 0) {
+      if (avgPh < 5.3) {
+        advices.push(`🚨 <strong>배지 산성화 경고</strong>: 평균 배액 pH가 <b>${avgPh.toFixed(2)}</b>로 너무 낮습니다. 뿌리 발근 저해와 칼슘 흡수 억제가 우려됩니다. 원수/양액 pH를 5.8~6.0으로 보정하세요.`);
+      } else if (avgPh > 6.7) {
+        advices.push(`⚠️ <strong>배지 알칼리화 주의</strong>: 평균 배액 pH가 <b>${avgPh.toFixed(2)}</b>로 높습니다. 철(Fe)·인산 등 미량원소 결핍(황화현상)이 올 수 있으니 질산 투입을 점검하세요.`);
+      }
+    }
+
+    // 배지 상태 배지(Badge) 색상 결정
+    if (dangerCount > 0 || avgDev >= 0.5 || (avgRatio !== null && (avgRatio < 10 || avgRatio > 35))) {
+      badgeEl.textContent = "🚨 긴급 조치 필요";
+      badgeEl.style.background = "#c62828";
+      cardEl.style.background = "#fff8f8";
+      cardEl.style.borderColor = "#ef9a9a";
+      cardEl.style.borderLeftColor = "#c62828";
+    } else if (avgDev >= 0.35 || avgDev <= -0.35 || (avgRatio !== null && (avgRatio < 13 || avgRatio > 28))) {
+      badgeEl.textContent = "⚠️ 주의 관찰 필요";
+      badgeEl.style.background = "#ef6c00";
+      cardEl.style.background = "#fffdf5";
+      cardEl.style.borderColor = "#ffe082";
+      cardEl.style.borderLeftColor = "#ef6c00";
+    } else {
+      badgeEl.textContent = "✅ 생육환경 매우 양호";
+      badgeEl.style.background = "#2e7d32";
+      cardEl.style.background = "#f4fbf5";
+      cardEl.style.borderColor = "#a5d6a7";
+      cardEl.style.borderLeftColor = "#2e7d32";
+    }
+
+    contentEl.innerHTML = advices.map(a => `<div style="margin-bottom:6px;">${a}</div>`).join("");
+  }
+
+  // 📊 2. 구역(라인)별 비교 성적표 렌더링
+  function renderZoneSummary() {
+    const tbody = document.getElementById("zoneSummaryBody");
+    if (!tbody) return;
+
+    if (!allRecords.length) {
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-box">집계할 데이터가 없습니다.</td></tr>`;
+      return;
+    }
+
+    // 구역별 그룹핑
+    const byZone = {};
+    allRecords.forEach((r) => {
+      const zName = r.zoneName || "미지정";
+      if (!byZone[zName]) {
+        byZone[zName] = {
+          zoneName: zName,
+          line: r.line || "V01",
+          records: [],
+          ecSum: 0, ecCnt: 0,
+          devSum: 0, devCnt: 0,
+          phSum: 0, phCnt: 0,
+          ratioSum: 0, ratioCnt: 0,
+          latestStatus: null
+        };
+      }
+      const st = checkStatus(r);
+      byZone[zName].records.push(r);
+      if (r.drainEc) { byZone[zName].ecSum += parseFloat(r.drainEc); byZone[zName].ecCnt++; }
+      if (st.ecDev !== "-") { byZone[zName].devSum += parseFloat(st.ecDev); byZone[zName].devCnt++; }
+      if (r.drainPh) { byZone[zName].phSum += parseFloat(r.drainPh); byZone[zName].phCnt++; }
+      if (st.ratio != null) { byZone[zName].ratioSum += st.ratio; byZone[zName].ratioCnt++; }
+      if (!byZone[zName].latestStatus) byZone[zName].latestStatus = st;
+    });
+
+    const sortedZones = Object.values(byZone).sort(zoneCompare);
+
+    tbody.innerHTML = sortedZones.map((z) => {
+      const avgEc = z.ecCnt ? (z.ecSum / z.ecCnt).toFixed(2) : "-";
+      const avgDev = z.devCnt ? (z.devSum / z.devCnt).toFixed(2) : "-";
+      const avgPh = z.phCnt ? (z.phSum / z.phCnt).toFixed(2) : "-";
+      const avgRatio = z.ratioCnt ? (z.ratioSum / z.ratioCnt).toFixed(1) + "%" : "-";
+      const st = z.latestStatus || { statusText: "-", statusColor: "#888" };
+
+      // 구역별 진단 및 조치 제안 도출
+      let guide = "정상 유지";
+      let guideColor = "#2e7d32";
+      const devNum = parseFloat(avgDev);
+      const ratioNum = parseFloat(avgRatio);
+
+      if (!isNaN(devNum) && devNum >= 0.5) {
+        guide = "염류집적 우려 (급액량 증량 or EC 인하)";
+        guideColor = "#c62828";
+      } else if (!isNaN(ratioNum) && ratioNum < 12) {
+        guide = "배액부족 (드리퍼 막힘/관수량 점검)";
+        guideColor = "#c62828";
+      } else if (!isNaN(ratioNum) && ratioNum > 30) {
+        guide = "과관수 우려 (관수 간격 조정)";
+        guideColor = "#ef6c00";
+      } else if (!isNaN(devNum) && devNum <= -0.35) {
+        guide = "비료소모 빠름 (EC 상향 검토)";
+        guideColor = "#1976d2";
+      }
+
+      return `
+        <tr>
+          <td><strong>${z.zoneName}</strong></td>
+          <td>${z.line}</td>
+          <td>${avgEc}</td>
+          <td style="font-weight:600; color:${!isNaN(devNum) && Math.abs(devNum) >= 0.4 ? '#c62828' : '#333'};">${!isNaN(devNum) && devNum > 0 ? "+" + avgDev : avgDev}</td>
+          <td>${avgPh}</td>
+          <td style="font-weight:bold;">${avgRatio}</td>
+          <td style="color:${st.statusColor}; font-weight:bold;">${st.statusText}</td>
+          <td style="color:${guideColor}; font-weight:600;">${guide}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // 💧 3. 일별 평균 배액율(%) 추이 차트
+  function renderRatioTrendChart() {
+    if (typeof Chart === "undefined") return;
+
+    const byDate = {};
+    allRecords.forEach((r) => {
+      const d = r.measureDate;
+      const st = checkStatus(r);
+      if (st.ratio != null) {
+        if (!byDate[d]) byDate[d] = { sum: 0, cnt: 0 };
+        byDate[d].sum += st.ratio;
+        byDate[d].cnt += 1;
+      }
+    });
+
+    const dates = Object.keys(byDate).sort((a, b) => a.localeCompare(b));
+    const ratioData = dates.map((d) => (byDate[d].sum / byDate[d].cnt).toFixed(1));
+
+    const canvas = document.getElementById("ratioTrendChart");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    if (ratioTrendChart) ratioTrendChart.destroy();
+
+    if (!dates.length) {
+      return;
+    }
+
+    ratioTrendChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: dates.map((d) => d.slice(5)),
+        datasets: [
+          {
+            label: "평균 배액율(%)",
+            data: ratioData,
+            borderColor: "#00897b",
+            backgroundColor: "rgba(0,137,123,0.1)",
+            borderWidth: 2.5,
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: "#00897b"
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "top", labels: { usePointStyle: true, boxWidth: 6, font: { size: 11 } } },
+          tooltip: {
+            backgroundColor: "#222",
+            padding: 10,
+            callbacks: {
+              label: (ctx) => ` 배액율: ${ctx.parsed.y}%`
+            }
+          }
+        },
+        scales: {
+          y: {
+            title: { display: true, text: "배액율 (%)", font: { size: 10 } },
+            grid: {
+              color: (ctx) => (ctx.tick && ctx.tick.value === 20 ? "rgba(0, 137, 123, 0.6)" : "#e8e8e8"),
+              lineWidth: (ctx) => (ctx.tick && ctx.tick.value === 20 ? 2 : 1)
+            },
+            ticks: { font: { size: 10 } },
+            suggestedMin: 10,
+            suggestedMax: 35
+          },
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        }
+      }
+    });
   }
 
   function renderList() {
     let filtered = allRecords;
-    if (currentFilter === "ok") filtered = allRecords.filter(r => checkStatus(r).level === "ok");
-    else if (currentFilter === "warn") filtered = allRecords.filter(r => checkStatus(r).level === "warn");
-    else if (currentFilter === "danger") filtered = allRecords.filter(r => checkStatus(r).level === "danger");
+    if (currentFilter === "ok") filtered = allRecords.filter((r) => checkStatus(r).level === "ok");
+    else if (currentFilter === "warn") filtered = allRecords.filter((r) => checkStatus(r).level === "warn");
+    else if (currentFilter === "danger") filtered = allRecords.filter((r) => checkStatus(r).level === "danger");
 
     const tb = document.getElementById("reportBody");
     if (!tb) return;
 
-    if (!filtered.length) { 
+    if (!filtered.length) {
       tb.innerHTML = `<tr><td colspan="15" class="empty-box">데이터가 없습니다.</td></tr>`;
-      return; 
+      return;
     }
 
-    tb.innerHTML = filtered.map(r => {
+    tb.innerHTML = filtered.map((r) => {
       const st = checkStatus(r);
       let rowClass = "";
       if (st.level === "danger") rowClass = "class='danger-row'";
       else if (st.level === "warn") rowClass = "class='warn-row'";
-      
+
       const zoneLine = `${r.zoneName || "-"} · ${r.line || "V01"}`;
-      
-      const ratioCell = st.ratio == null
-        ? `<span style="color:#999;">-</span>`
-        : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
+      const ratioCell =
+        st.ratio == null
+          ? `<span style="color:#999;">-</span>`
+          : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
+
+      const fEc = window.formatEc || ((v) => (v != null && v !== "" && !isNaN(v) ? parseFloat(v).toFixed(2) : "-"));
+      const fPh = window.formatPh || ((v) => (v != null && v !== "" && !isNaN(v) ? parseFloat(v).toFixed(2) : "-"));
 
       return `<tr ${rowClass}>
         <td>${r.measureDate || "-"}</td>
         <td>${r.measureTime || "-"}</td>
         <td>${zoneLine}</td>
-        <td>${r.drainEc || "-"}</td>
-        <td>${st.supEc}</td>
+        <td>${fEc(r.drainEc)}</td>
+        <td>${fEc(st.supEc)}</td>
         <td style="color:${st.statusColor}; font-weight:bold;">${st.ecDev}</td>
-        <td>${r.drainPh || "-"}</td>
-        <td>${st.supPh}</td>
+        <td>${fPh(r.drainPh)}</td>
+        <td>${fPh(st.supPh)}</td>
         <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
-        <td>${r.sampleEc || "-"}</td>
-        <td>${r.samplePh || "-"}</td>
+        <td>${fEc(r.sampleEc)}</td>
+        <td>${fPh(r.samplePh)}</td>
         <td>${r.bedTemp != null ? r.bedTemp + "℃" : "-"}</td>
         <td>${r.drainAmount || "-"}${r.supplyEvents ? ` <span style="font-size:9px;color:#888;">(${r.supplyEvents}회)</span>` : ""}</td>
         <td>${ratioCell}</td>
@@ -445,31 +565,14 @@
   }
 
   function bindEvents() {
-    document.addEventListener("click", e => {
-      if (e.target.id === "hamBtn" || e.target.closest("#hamBtn")) {
-        const sidebar = document.getElementById("sidebar");
-        const overlay = document.getElementById("overlay");
-        if (sidebar) sidebar.classList.toggle("open");
-        if (overlay) overlay.classList.toggle("show");
-      }
-      if (e.target.id === "sidebarLogoutBtn" || e.target.closest("#sidebarLogoutBtn")) {
-        e.preventDefault();
-        if (confirm("로그아웃 하시겠습니까?")) {
-          localStorage.removeItem("user");
-          localStorage.removeItem("userRole");
-          location.href = "index.html";
-        }
-      }
-
-      // 상태 필터 버튼 (전체/정상/주의/경고)
+    document.addEventListener("click", (e) => {
       const filterBtn = e.target.closest(".status-filter-box button");
       if (filterBtn && filterBtn.dataset.filter) {
         setFilter(filterBtn.dataset.filter);
       }
     });
 
-    // ✅ 날짜 / 구역 변경 시 즉시 자동 적용 (조회 버튼 없음)
-    ["sDate", "eDate", "zoneSel"].forEach(id => {
+    ["sDate", "eDate", "zoneSel"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) {
         el.addEventListener("change", () => applyFilter());
@@ -478,49 +581,44 @@
   }
 
   async function init() {
-    const auth = localCheckAuth();
+    const auth = window.checkAuth ? window.checkAuth() : null;
     if (!auth) return;
 
     bindEvents();
-    await loadFarmInfo();
 
-    // ✅ 기본 날짜 설정 (최근 7일) — 로컬 날짜 문자열로 직접 설정 (시간대 무관)
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // 로컬 자정
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startDate = new Date(today);
-    startDate.setDate(today.getDate() - 6); // 6일 전 = 오늘 포함 7일
+    startDate.setDate(today.getDate() - 6);
 
     const eDateEl = document.getElementById("eDate");
     const sDateEl = document.getElementById("sDate");
-    
-    if (eDateEl) eDateEl.value = toLocalYmd(today);      // ✅ 로컬 문자열 직접 할당
-    if (sDateEl) sDateEl.value = toLocalYmd(startDate);  // ✅ 로컬 문자열 직접 할당
+    if (eDateEl) eDateEl.value = window.toLocalYmd ? window.toLocalYmd(today) : today.toISOString().slice(0, 10);
+    if (sDateEl) sDateEl.value = window.toLocalYmd ? window.toLocalYmd(startDate) : startDate.toISOString().slice(0, 10);
 
     const database = await ensureDb();
     if (!database) return;
     const { collection, getDocs } = await getFs();
 
-    // 구역 목록
     const zSnap = await getDocs(collection(database, "zones"));
-    zoneList = zSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort(zoneCompare);
+    zoneList = zSnap.docs.map((d) => ({ id: d.id, ...d.data() })).sort(zoneCompare);
     const sel = document.getElementById("zoneSel");
     if (sel) {
-      zoneList.forEach(z => sel.innerHTML += `<option value="${z.zoneName}">${z.zoneName}</option>`);
+      zoneList.forEach((z) => {
+        sel.innerHTML += `<option value="${z.zoneName}">${z.zoneName}</option>`;
+      });
     }
 
-    // ✅ 급액기준 + 급액셋팅 동시 로드
     const [sSnap, ssSnap] = await Promise.all([
       getDocs(collection(database, "supply_standards")),
       getDocs(collection(database, "supply_settings")).catch(() => null)
     ]);
-    standards = sSnap.docs.map(d => d.data());
-    supplySettings = ssSnap ? ssSnap.docs.map(d => ({ id: d.id, ...d.data() })) : [];
+    standards = sSnap.docs.map((d) => d.data());
+    supplySettings = ssSnap ? ssSnap.docs.map((d) => ({ id: d.id, ...d.data() })) : [];
 
-    // 초기 데이터 조회
     applyFilter();
   }
 
-  // ✅ HTML 인라인 onclick용 전역 노출
   window.setFilter = setFilter;
   window.applyFilter = applyFilter;
 

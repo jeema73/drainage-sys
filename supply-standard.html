@@ -4,86 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>급액기준등록 · 강북구 스마트팜 재배단지</title>
-  <link rel="stylesheet" href="style.css?v=20260919">
+  <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:;base64,=">
 </head>
 <body>
-  <!-- ✅ 통일된 전체 레이아웃 — AI설정과 완전 동일 -->
+  <!-- ✅ 공통 레이아웃 (사이드바, 헤더, 오버레이는 common.js에서 자동 주입) -->
   <div class="app-layout">
-    <!-- ✅ 왼쪽 사이드바 — AI설정과 완전 동일 -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-logo-top">
-        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1.png" alt="강북구 로고">
-      </div>
-      <!-- ✅ 사용자 정보 박스 — AI설정과 완전 동일 -->
-      <!-- ✅ 사용자 정보 박스 -->
-      <div class="user-info-box" id="userInfoBox">
-        <div class="sys-name1">Drainage System</div>
-        <div class="sys-name">배액 관리 시스템</div>
-        <div class="user-row">
-          <span class="user-name" id="sidebarUserName">사용자 정보</span>
-          <a href="#" class="logout-btn" id="sidebarLogoutBtn">LOGOUT</a>
-        </div>
-      </div>
-      <div class="menu-divider"></div>
-      <!-- ✅ 메뉴 — 권한별 보임/숨김, AI설정과 완전 동일 -->
-      <div class="sidebar-menu" id="sidebarMenu">
-        <a href="dashboard.html" data-role="all">📊 대시보드</a>
-        <a href="drain-record.html" data-role="all">📝 배액기록</a>
-        <a href="analysis-report.html" data-role="all">📈 분석리포트</a>
-        <a href="ai-report.html" data-role="all">🤖 AI분석리포트</a>
-        <a href="print-page.html" data-role="all">🖨️ 인쇄/CSV</a>
-        <div class="menu-divider"></div>
-        <a href="supply-standard.html" data-role="admin,manager">⚙️ 급액기준등록</a>
-        <a href="zone-manage.html" data-role="admin,manager">📍 구역등록</a>
-        <a href="farm-settings.html" data-role="admin,manager">🏠 농장설정</a>
-        <a href="ai-settings.html" data-role="admin">🔧 AI분석설정</a>
-        <a href="account-manage.html" class="active" data-role="admin">👤 계정관리</a>
-      </div>
-      <!-- ✅ 구분선 -->
-      <div class="menu-divider"></div>
-      <!-- ✅ 하단 로고 — AI설정과 완전 동일 -->
-      <div class="sidebar-logo-bottom">
-        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1_eng.png" alt="하단로고">
-      </div>
-      <!-- ✅ 날씨 영역 — AI설정과 완전 동일 -->
-      <div class="weather-box" id="weatherBox">
-        <table class="weather-table">
-          <tr>
-            <td style="width: 35%;">
-              <div class="weather-icon" id="weatherIcon">🌤️</div>
-            </td>
-            <td style="width: 65%; text-align: left; padding-left: 8px;">
-              <div class="weather-temp" id="weatherTemp">--°</div>
-              <div class="weather-desc" id="weatherDesc">날씨 불러오는 중...</div>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div class="weather-range" id="weatherRange">최저 --° / 최고 --°</div>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div class="weather-location">서울시 강북구</div>
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div style="margin-top:auto;"></div>
-    </aside>
-
-    <!-- ✅ 오른쪽: TOP바 + 내용 -->
     <div class="right-column">
-      <header class="top-header">
-        <button class="header-hamburger" id="hamBtn">☰</button>
-        <div class="header-title-group">
-          <div class="header-title" id="topFarmName">농장정보 로딩중...</div>
-          <div class="top-meta" id="topFarmMeta">정보 불러오는 중...</div>
-        </div>
-      </header>
-
-      <!-- ✅ 내용 — 기존 급액기준등록 기능 그대로 유지 -->
       <main class="content-wrapper">
         <div class="container" id="adminArea" style="display:none;">
           <div class="page-top-bar">
@@ -91,28 +18,28 @@
             <p>기준일자별·라인별 급액 EC/pH 기준값을 관리합니다. <strong>최신 기준이 자동 적용</strong>됩니다.</p>
           </div>
 
-<div class="card daily-input-box">
-  <h3 id="formTitle">➕ 기준 등록</h3>
-  <input type="hidden" id="editId">
-  <datalist id="periodSuggest">
-    <option value="활착기"></option><option value="생육기"></option>
-    <option value="비대기"></option><option value="수확기 초기"></option>
-    <option value="수확기 중기"></option><option value="수확기 후기"></option>
-  </datalist>
-  <div class="form-grid">
-    <label>생육단계 *</label><input type="text" id="periodName" list="periodSuggest" placeholder="예: 활착기">
-    <label>적용일자 *</label><input type="date" id="standardDate">
-    <label>라인</label><select id="lineNo"><option value="V01">V01 라인</option><option value="V02">V02 라인</option><option value="V03">V03 라인</option></select>
-    <label>배액율(%)</label><input type="number" step="1" id="drainRate" placeholder="예: 30">
-    <label>목표 EC *</label><input type="number" step="0.01" id="targetEc" placeholder="예: 1.20">
-    <label>목표 pH *</label><input type="number" step="0.1" id="targetPh" placeholder="예: 6.5">
-    <label>비고</label><input type="text" id="remark" class="full" placeholder="참고사항">
-  </div>
-  <div class="form-btn-row">
-    <button class="btn-primary" onclick="saveStandard()">💾 저장</button>
-    <button class="btn-secondary" onclick="resetForm()">↺ 초기화</button>
-  </div>
-</div>
+          <div class="card daily-input-box">
+            <h3 id="formTitle">➕ 기준 등록</h3>
+            <input type="hidden" id="editId">
+            <datalist id="periodSuggest">
+              <option value="활착기"></option><option value="생육기"></option>
+              <option value="비대기"></option><option value="수확기 초기"></option>
+              <option value="수확기 중기"></option><option value="수확기 후기"></option>
+            </datalist>
+            <div class="form-grid">
+              <label>생육단계 *</label><input type="text" id="periodName" list="periodSuggest" placeholder="예: 활착기">
+              <label>적용일자 *</label><input type="date" id="standardDate">
+              <label>라인</label><select id="lineNo"><option value="V01">V01 라인</option><option value="V02">V02 라인</option><option value="V03">V03 라인</option></select>
+              <label>배액율(%)</label><input type="number" step="1" id="drainRate" placeholder="예: 30">
+              <label>목표 EC *</label><input type="number" step="0.01" id="targetEc" placeholder="예: 1.20">
+              <label>목표 pH *</label><input type="number" step="0.1" id="targetPh" placeholder="예: 6.5">
+              <label>비고</label><input type="text" id="remark" class="full" placeholder="참고사항">
+            </div>
+            <div class="form-btn-row">
+              <button class="btn-primary" onclick="saveStandard()">💾 저장</button>
+              <button class="btn-secondary" onclick="resetForm()">↺ 초기화</button>
+            </div>
+          </div>
 
           <!-- ✅ 기준 목록 -->
           <div class="card">
@@ -137,9 +64,16 @@
               </table>
             </div>
           </div>
+
           <!-- ✅ 급액 셋팅 등록 (순수 기준만: 시간·유량) -->
           <div class="card daily-input-box">
             <h3 id="ssFormTitle">💧 급액 셋팅 등록 (라인별·일자별)</h3>
+            <div class="season-note" style="margin-bottom:8px; font-size:10px;">
+              💡 <strong>끝 배지 유량 안내</strong>: 라인 끝 샘플 배지 1개(드리퍼 5개)의 시간당 총 유량(L/h)입니다.<br>
+              · 2L 드리퍼 5개 = <strong>10 L/h</strong> (3분 공급 시 1회 500mL)<br>
+              · 실측 간편입력: <button type="button" class="btn-sm btn-secondary" onclick="calcByDripper(5, 2)" style="font-size:9.5px; padding:2px 6px;">🌱 2L 드리퍼 5개(기본)</button>
+              <button type="button" class="btn-sm btn-secondary" onclick="promptMeasureCalc()" style="font-size:9.5px; padding:2px 6px;">🧪 비커 실측값으로 입력</button>
+            </div>
             <input type="hidden" id="ssEditId">
             <div class="form-grid">
               <label>적용일자 *</label><input type="date" id="ssDate">
@@ -156,8 +90,8 @@
                 <option value="입력시간">입력시간</option>
               </select>
               <label>공급시간(분/회) *</label><input type="number" step="0.5" id="ssMinutes" placeholder="예: 3">
-              <label>끝 배지 유량(L/h) *</label><input type="number" step="0.01" id="ssFlow" placeholder="예: 9.6">
-              <label>[자동] 1회 급액량</label><input type="text" id="ssPerEvent" class="readonly-bg" readonly tabindex="-1">
+              <label>끝 배지 유량(L/h) *</label><input type="number" step="0.01" id="ssFlow" placeholder="예: 10 (2L×5개)">
+              <label>[자동] 1회 급액량</label><input type="text" id="ssPerEvent" class="readonly-bg" readonly tabindex="-1" placeholder="예: 500 mL (0.50 L)">
             </div>
             <div class="form-btn-row">
               <button class="btn-primary" onclick="saveSupplySetting()">💾 저장</button>
@@ -187,8 +121,8 @@
       </main>
     </div>
   </div>
-  <div class="overlay" id="overlay"></div>
-  <script src="common.js?v=20260919" defer></script>
-  <script src="assets/js/pages/supply-standard.js?v=20260919" defer></script>
+
+  <script src="common.js" defer></script>
+  <script src="assets/js/pages/supply-standard.js" defer></script>
 </body>
 </html>

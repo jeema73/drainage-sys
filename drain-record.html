@@ -4,86 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>배액기록 · 강북구 스마트팜 재배단지</title>
-  <link rel="stylesheet" href="style.css?v=20260919">
+  <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:;base64,=">
 </head>
 <body>
-  <!-- ✅ 통일된 전체 레이아웃 — AI설정과 완전 동일 -->
+  <!-- ✅ 공통 레이아웃 (사이드바, 헤더, 오버레이는 common.js에서 자동 주입) -->
   <div class="app-layout">
-    <!-- ✅ 왼쪽 사이드바 — AI설정과 완전 동일 -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-logo-top">
-        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1.png" alt="강북구 로고">
-      </div>
-      <!-- ✅ 사용자 정보 박스 — AI설정과 완전 동일 -->
-      <!-- ✅ 사용자 정보 박스 -->
-      <div class="user-info-box" id="userInfoBox">
-        <div class="sys-name1">Drainage System</div>
-        <div class="sys-name">배액 관리 시스템</div>
-        <div class="user-row">
-          <span class="user-name" id="sidebarUserName">사용자 정보</span>
-          <a href="#" class="logout-btn" id="sidebarLogoutBtn">LOGOUT</a>
-        </div>
-      </div>
-      <div class="menu-divider"></div>
-      <!-- ✅ 메뉴 — 권한별 보임/숨김, AI설정과 완전 동일 -->
-      <div class="sidebar-menu" id="sidebarMenu">
-        <a href="dashboard.html" data-role="all">📊 대시보드</a>
-        <a href="drain-record.html" data-role="all">📝 배액기록</a>
-        <a href="analysis-report.html" data-role="all">📈 분석리포트</a>
-        <a href="ai-report.html" data-role="all">🤖 AI분석리포트</a>
-        <a href="print-page.html" data-role="all">🖨️ 인쇄/CSV</a>
-        <div class="menu-divider"></div>
-        <a href="supply-standard.html" data-role="admin,manager">⚙️ 급액기준등록</a>
-        <a href="zone-manage.html" data-role="admin,manager">📍 구역등록</a>
-        <a href="farm-settings.html" data-role="admin,manager">🏠 농장설정</a>
-        <a href="ai-settings.html" data-role="admin">🔧 AI분석설정</a>
-        <a href="account-manage.html" class="active" data-role="admin">👤 계정관리</a>
-      </div>
-      <!-- ✅ 구분선 -->
-      <div class="menu-divider"></div>
-      <!-- ✅ 하단 로고 — AI설정과 완전 동일 -->
-      <div class="sidebar-logo-bottom">
-        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1_eng.png" alt="하단로고">
-      </div>
-      <!-- ✅ 날씨 영역 — AI설정과 완전 동일 -->
-      <div class="weather-box" id="weatherBox">
-        <table class="weather-table">
-          <tr>
-            <td style="width: 35%;">
-              <div class="weather-icon" id="weatherIcon">🌤️</div>
-            </td>
-            <td style="width: 65%; text-align: left; padding-left: 8px;">
-              <div class="weather-temp" id="weatherTemp">--°</div>
-              <div class="weather-desc" id="weatherDesc">날씨 불러오는 중...</div>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div class="weather-range" id="weatherRange">최저 --° / 최고 --°</div>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div class="weather-location">서울시 강북구</div>
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div style="margin-top:auto;"></div>
-    </aside>
-
-    <!-- ✅ 오른쪽: TOP바 + 내용 -->
     <div class="right-column">
-      <header class="top-header">
-        <button class="header-hamburger" id="hamBtn">☰</button>
-        <div class="header-title-group">
-          <div class="header-title" id="topFarmName">농장정보 로딩중...</div>
-          <div class="top-meta" id="topFarmMeta">정보 불러오는 중...</div>
-        </div>
-      </header>
-
-      <!-- ✅ 배액기록 본연의 내용 — 전혀 변경안함 -->
       <main class="content-wrapper">
         <div class="container" id="adminArea" style="display:none;">
           <div class="page-top-bar" style="margin-bottom:12px;">
@@ -91,35 +18,38 @@
             <p style="margin:0; font-size:10.5px; color:#666;">배액 EC/pH 데이터를 등록하고 관리·승인할 수 있습니다.</p>
           </div>
 
-<div class="card daily-input-box" id="recordFormCard">
-  <h3 id="formTitle">➕ 배액 기록 등록</h3>
-  <input type="hidden" id="editId">
-  <div class="form-grid">
-    <label>측정일자 *</label><input type="date" id="measureDate">
-    <label>측정시간 *</label><input type="time" id="measureTime">
-    <label>구역명 *</label><select id="zoneSel"><option value="">-- 구역 선택 --</option></select>
-    <label>배지온도(℃)</label><input type="number" step="0.1" id="bedTemp">
-    <label>배액 EC *</label><input type="number" step="0.01" id="drainEc">
-    <label>배액 pH *</label><input type="number" step="0.01" id="drainPh">
-  </div>
-  <div id="sampleRowWrap" style="display:none;">
-      <div style="font-size:10.5px; font-weight:700; color:#4A7C59; margin-bottom:8px;">
-    🧪 샘플 측정 · 배액량 · 전일 공급횟수
-  </div>
-    <div class="form-grid">
-      <label>샘플 EC</label><input type="number" step="0.01" id="sampleEc">
-      <label>샘플 pH</label><input type="number" step="0.01" id="samplePh">
-      <label>배액량(mL)</label><input type="number" id="drainAmount">
-      <label>전일 공급횟수(회) *</label><input type="number" step="1" id="supplyEvents" placeholder="어제 총 급수횟수 (자동 프리필)">     
-    </div>
-  </div>
-  <div class="form-btn-row">
-    <button type="button" id="saveBtn" class="btn-primary">💾 저장</button>
-    <button type="button" id="resetBtn" class="btn-secondary">↺ 초기화</button>
-  </div>
-</div>
+          <div class="card daily-input-box" id="recordFormCard">
+            <h3 id="formTitle">➕ 배액 기록 등록</h3>
+            <input type="hidden" id="editId">
+            <div class="form-grid">
+              <label>측정일자 *</label><input type="date" id="measureDate">
+              <label>측정시간 *</label><input type="time" id="measureTime">
+              <label>구역명 *</label><select id="zoneSel"><option value="">-- 구역 선택 --</option></select>
+              <label>배지온도(℃)</label><input type="number" step="0.1" id="bedTemp" inputmode="decimal" pattern="[0-9]*\.?[0-9]*">
+              <label>배액 EC *</label><input type="number" step="0.01" id="drainEc" inputmode="decimal" pattern="[0-9]*\.?[0-9]*">
+              <label>배액 pH *</label><input type="number" step="0.01" id="drainPh" inputmode="decimal" pattern="[0-9]*\.?[0-9]*">
+            </div>
+            <div id="sampleRowWrap" style="display:none;">
+              <div style="font-size:10.5px; font-weight:700; color:#4A7C59; margin-bottom:8px;">
+                🧪 샘플 측정 · 배액량 · 전일 공급횟수
+              </div>
+              <div class="form-grid">
+                <label>샘플 EC</label><input type="number" step="0.01" id="sampleEc" inputmode="decimal" pattern="[0-9]*\.?[0-9]*">
+                <label>샘플 pH</label><input type="number" step="0.01" id="samplePh" inputmode="decimal" pattern="[0-9]*\.?[0-9]*">
+                <label>배액량(mL)</label><input type="number" id="drainAmount" inputmode="numeric" pattern="[0-9]*" placeholder="예: 800">
+                <label>전일 공급횟수(회) *</label><input type="number" step="1" id="supplyEvents" inputmode="numeric" pattern="[0-9]*" placeholder="어제 총 급수횟수 (예: 8)">     
+              </div>
+              <!-- 💧 실시간 배액율 계산 안내 바 -->
+              <div id="realtimeRatioInfo" style="display:none; margin-top:8px; padding:6px 10px; background:#e8f5e9; border:1px solid #c8e6c9; border-radius:6px; font-size:10.5px; color:#2e7d32; line-height:1.4;">
+              </div>
+            </div>
+            <div class="form-btn-row">
+              <button type="button" id="saveBtn" class="btn-primary">💾 저장</button>
+              <button type="button" id="resetBtn" class="btn-secondary">↺ 초기화</button>
+            </div>
+          </div>
 
-          <!-- ✅ 조회 조건 (form-row로 감싸서 정렬) -->
+          <!-- ✅ 조회 조건 -->
           <div class="card">
             <h3>🔍 조회</h3>
             <div class="form-row search-row">
@@ -175,8 +105,8 @@
       </main>
     </div>
   </div>
-  <div class="overlay" id="overlay"></div>
-  <script src="common.js?v=20260919" defer></script>
-<script src="assets/js/pages/drain-record.js?v=20260919" defer></script>
+
+  <script src="common.js" defer></script>
+  <script src="assets/js/pages/drain-record.js" defer></script>
 </body>
 </html>

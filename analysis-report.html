@@ -4,87 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>분석리포트 · 강북구 스마트팜 재배단지</title>
-  <link rel="stylesheet" href="style.css?v=20260919">
+  <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:;base64,=">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <!-- ✅ 통일된 전체 레이아웃 — AI설정과 완전 동일 -->
+  <!-- ✅ 공통 레이아웃 (사이드바, 헤더, 오버레이는 common.js에서 자동 주입) -->
   <div class="app-layout">
-    <!-- ✅ 왼쪽 사이드바 — AI설정과 완전 동일 -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-logo-top">
-        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1.png" alt="강북구 로고">
-      </div>
-      <!-- ✅ 사용자 정보 박스 — AI설정과 완전 동일 -->
-      <!-- ✅ 사용자 정보 박스 -->
-      <div class="user-info-box" id="userInfoBox">
-        <div class="sys-name1">Drainage System</div>
-        <div class="sys-name">배액 관리 시스템</div>
-        <div class="user-row">
-          <span class="user-name" id="sidebarUserName">사용자 정보</span>
-          <a href="#" class="logout-btn" id="sidebarLogoutBtn">LOGOUT</a>
-        </div>
-      </div>
-      <div class="menu-divider"></div>
-      <!-- ✅ 메뉴 — 권한별 보임/숨김, AI설정과 완전 동일 -->
-      <div class="sidebar-menu" id="sidebarMenu">
-        <a href="dashboard.html" data-role="all">📊 대시보드</a>
-        <a href="drain-record.html" data-role="all">📝 배액기록</a>
-        <a href="analysis-report.html" data-role="all">📈 분석리포트</a>
-        <a href="ai-report.html" data-role="all">🤖 AI분석리포트</a>
-        <a href="print-page.html" data-role="all">🖨️ 인쇄/CSV</a>
-        <div class="menu-divider"></div>
-        <a href="supply-standard.html" data-role="admin,manager">⚙️ 급액기준등록</a>
-        <a href="zone-manage.html" data-role="admin,manager">📍 구역등록</a>
-        <a href="farm-settings.html" data-role="admin,manager">🏠 농장설정</a>
-        <a href="ai-settings.html" data-role="admin">🔧 AI분석설정</a>
-        <a href="account-manage.html" class="active" data-role="admin">👤 계정관리</a>
-      </div>
-      <!-- ✅ 구분선 -->
-      <div class="menu-divider"></div>
-      <!-- ✅ 하단 로고 — AI설정과 완전 동일 -->
-      <div class="sidebar-logo-bottom">
-        <img src="https://www.gangbuk.go.kr/static/images/portal/ns_bi_logo1_eng.png" alt="하단로고">
-      </div>
-      <!-- ✅ 날씨 영역 — AI설정과 완전 동일 -->
-      <div class="weather-box" id="weatherBox">
-        <table class="weather-table">
-          <tr>
-            <td style="width: 35%;">
-              <div class="weather-icon" id="weatherIcon">🌤️</div>
-            </td>
-            <td style="width: 65%; text-align: left; padding-left: 8px;">
-              <div class="weather-temp" id="weatherTemp">--°</div>
-              <div class="weather-desc" id="weatherDesc">날씨 불러오는 중...</div>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div class="weather-range" id="weatherRange">최저 --° / 최고 --°</div>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div class="weather-location">서울시 강북구</div>
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div style="margin-top:auto;"></div>
-    </aside>
-    <!-- ✅ 오른쪽: TOP바 + 내용 -->
     <div class="right-column">
-      <header class="top-header">
-        <button class="header-hamburger" id="hamBtn">☰</button>
-        <div class="header-title-group">
-          <div class="header-title" id="topFarmName">농장정보 로딩중...</div>
-          <div class="top-meta" id="topFarmMeta">정보 불러오는 중...</div>
-        </div>
-      </header>
       <main class="content-wrapper">
         <div class="container" id="adminArea" style="display:none;">
-          <!-- ✅ 리포트 본문 — 원본 그대로 유지 -->
           <div class="page-top-bar" style="margin-bottom:12px;">
             <h2 style="margin:0 0 4px 0; font-size:14px;">📝 분 석 리 포 트</h2>
             <p style="margin:0; font-size:10.5px; color:#666;">최근 7일간 데이터를 기준으로 분석합니다.</p>
@@ -111,58 +40,113 @@
               🚨 경고: EC +0.7↑ 또는 -0.5↓ / pH +0.9↑ 또는 -0.7↓ 또는 pH 6.8↑ 또는 5.2↓
             </p>
           </div>
-          <div class="card">
-            <h3>📋 분석요약</h3>
-            <div class="info-row">
-              <span>분석건수: <strong id="aCount">0</strong></span>
-              <span>평균EC편차: <strong id="ecDev">0</strong></span>
-              <span>평균샘플EC편차: <strong id="sEcDev">0</strong></span>
-              <span>주의건수: <strong id="wCount">0</strong></span>
+          <!-- 🏥 1. 오늘의 배액 처방전 / 종합 상태 진단 -->
+          <div class="card" id="prescriptionCard" style="background:#f4fbf5; border:1.5px solid #a5d6a7; border-left:5px solid #2e7d32;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <h3 style="margin:0; font-size:13px; color:#1b5e20; border:none; padding:0;">🏥 종합 배액 진단 & 맞춤 처방전</h3>
+              <span id="overallBadge" style="font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; background:#2e7d32; color:#fff;">진단 중...</span>
+            </div>
+            <div id="prescriptionContent" style="font-size:11px; line-height:1.6; color:#2e4034;">
+              데이터를 분석하는 중입니다...
             </div>
           </div>
+
+          <!-- 📋 2. 기본 분석 요약 지표 -->
           <div class="card">
-            <h3>📈 일별 평균 편차 추이</h3>
+            <h3>📋 분석 요약 지표</h3>
+            <div class="info-row" style="margin-bottom:0;">
+              <span>📊 분석건수: <strong id="aCount">0</strong></span>
+              <span>⚡ 평균 EC편차: <strong id="ecDev">0.00</strong></span>
+              <span>🧪 평균 샘플EC편차: <strong id="sEcDev">0.00</strong></span>
+              <span>💧 평균 배액율: <strong id="avgRatioText">-</strong></span>
+              <span>⚠️ 주의/경고: <strong id="wCount" style="color:#c62828;">0건</strong></span>
+            </div>
+          </div>
+
+          <!-- 📊 3. 구역(라인)별 비교 성적표 (관수 불균일/이상구역 감지) -->
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <h3 style="margin:0; border:none; padding:0;">📍 구역(라인)별 비교 성적표</h3>
+              <span style="font-size:9.5px; color:#666;">※ 구역 간 편차와 이상 징후를 한눈에 파악합니다.</span>
+            </div>
+            <div class="table-wrapper">
+              <table id="zoneSummaryTable">
+                <thead>
+                  <tr>
+                    <th>구역명</th>
+                    <th>양액라인</th>
+                    <th>평균 배액EC</th>
+                    <th>평균 EC편차</th>
+                    <th>평균 배액pH</th>
+                    <th>평균 배액율</th>
+                    <th>최근 상태</th>
+                    <th>진단 및 조치사항</th>
+                  </tr>
+                </thead>
+                <tbody id="zoneSummaryBody">
+                  <tr><td colspan="8" class="empty-box">구역 데이터를 집계 중입니다...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 📈 4. 일별 평균 편차 추이 차트 -->
+          <div class="card">
+            <h3>📈 일별 평균 편차 추이 (EC · pH)</h3>
             <p class="chart-desc">
-              파란선=EC편차 / 녹색선=pH편차 / 중앙 점선=기준선(0)에 가까울수록 안정적
+              파란선=EC편차 / 녹색선=pH편차 / 중앙 기준선(0) 부근(초록 밴드)에 위치할수록 안정적
             </p>
             <div class="chart-container">
               <canvas id="deviationChart"></canvas>
             </div>
           </div>
-          <div class="card">
-            <h3>📊 날짜별 위험 건수</h3>
-            <p class="chart-desc">
-              주의(노랑) · 경고(빨강) 건수 합 / 수치가 낮을수록 양호
-            </p>
-            <div class="chart-container-bar">
-              <canvas id="warningChart"></canvas>
+
+          <!-- 💧 5. 일별 평균 배액율 추이 및 위험 건수 -->
+          <div class="grid-2">
+            <div class="card">
+              <h3>💧 일별 평균 배액율(%) 추이</h3>
+              <p class="chart-desc">
+                목표 배액율 대비 수분 밸런스 점검 (15~25% 적정)
+              </p>
+              <div class="chart-container-bar">
+                <canvas id="ratioTrendChart"></canvas>
+              </div>
+            </div>
+            <div class="card">
+              <h3>🚨 날짜별 위험 건수 현황</h3>
+              <p class="chart-desc">
+                주의(노랑) · 경고(빨강) 건수 / 낮을수록 양호
+              </p>
+              <div class="chart-container-bar">
+                <canvas id="warningChart"></canvas>
+              </div>
             </div>
           </div>
           <div class="card">
             <h3>📑 상세분석리포트</h3>
             <div class="table-wrapper">
               <table id="reportTable">
-<thead>
-  <tr>
-    <th>일자</th>
-    <th>시간</th>
-    <th>구역/라인</th>
-    <th>배액EC</th>
-    <th>기준EC</th>
-    <th>EC편차</th>
-    <th>배액pH</th>
-    <th>기준pH</th>
-    <th>pH편차</th>
-    <th>샘플EC</th>
-    <th>샘플pH</th>
-    <th>배지온도</th>
-    <th>배액량<br><span style="font-size:9px;color:#888;">(전일 공급횟수)</span></th>
-    <th>배액율</th>
-    <th>상태</th>
-  </tr>
-</thead>
+                <thead>
+                  <tr>
+                    <th>일자</th>
+                    <th>시간</th>
+                    <th>구역/라인</th>
+                    <th>배액EC</th>
+                    <th>기준EC</th>
+                    <th>EC편차</th>
+                    <th>배액pH</th>
+                    <th>기준pH</th>
+                    <th>pH편차</th>
+                    <th>샘플EC</th>
+                    <th>샘플pH</th>
+                    <th>배지온도</th>
+                    <th>배액량<br><span style="font-size:9px;color:#888;">(전일 공급횟수)</span></th>
+                    <th>배액율</th>
+                    <th>상태</th>
+                  </tr>
+                </thead>
                 <tbody id="reportBody">
-                  <tr><td colspan="14">날짜를 선택해주세요.</td></tr>
+                  <tr><td colspan="15">날짜를 선택해주세요.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -171,8 +155,8 @@
       </main>
     </div>
   </div>
-  <div class="overlay" id="overlay"></div>
-<script src="common.js?v=20260919" defer></script>
-<script src="assets/js/pages/analysis-report.js?v=20260919" defer></script>
+
+  <script src="common.js" defer></script>
+  <script src="assets/js/pages/analysis-report.js" defer></script>
 </body>
 </html>

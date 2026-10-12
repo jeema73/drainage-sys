@@ -231,6 +231,7 @@
     </div>
   </div>
 
+<script src="common.js"></script>
 <script>
   // ✅ 아이디 저장 — 불러오기
   function loadSavedId() {
@@ -296,21 +297,11 @@
     saveIdPreference(id);
 
     try {
-      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js");
-      const { getFirestore, collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js");
-      
-      const firebaseConfig = {
-        apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
-        authDomain: "smartfarm-drainage-system.firebaseapp.com",
-        projectId: "smartfarm-drainage-system",
-        storageBucket: "smartfarm-drainage-system.firebasestorage.app",
-        messagingSenderId: "699907108321",
-        appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
-        measurementId: "G-W7L21Y8JZN"
-      };
-      
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
+      const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js");
+      const db = typeof window.initFirebaseIfNeeded === "function" 
+        ? await window.initFirebaseIfNeeded()
+        : null;
+      if (!db) throw new Error("Firebase 데이터베이스 연결 실패");
       let found = null;
 
       // ✅ 모든 계정을 DB에서 조회 (admin 포함)

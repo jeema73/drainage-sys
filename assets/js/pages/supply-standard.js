@@ -1,16 +1,10 @@
 (() => {
   "use strict";
-  console.log("✅ supply-standard.js 로드됨 (v260920)");
 
   let db = null;
   let fsMod = null;
-  const FARM_SETTINGS_ID = "current";
   const SS_COLLECTION = "supply_settings";
-  let userRole = "";
   let supplySettings = [];
-
-  const ROLE_ADMIN = "admin";
-  const ROLE_MANAGER = "manager";
 
   async function getFs() {
     if (!fsMod) {
@@ -24,141 +18,91 @@
     if (typeof window.initFirebaseIfNeeded === "function") {
       db = await window.initFirebaseIfNeeded();
     }
-    if (!db) {
-      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js");
-      const { getFirestore } = await getFs();
-      const firebaseConfig = {
-        apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
-        authDomain: "smartfarm-drainage-system.firebaseapp.com",
-        projectId: "smartfarm-drainage-system",
-        storageBucket: "smartfarm-drainage-system.firebasestorage.app",
-        messagingSenderId: "699907108321",
-        appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
-        measurementId: "G-W7L21Y8JZN"
-      };
-      db = getFirestore(initializeApp(firebaseConfig));
-    }
     return db;
   }
 
-  function getRoleName(role) {
-    const map = { admin: "최고관리자", manager: "매니저", worker: "공공근로자", guest: "게스트" };
-    return map[role] || role;
-  }
-
-  function applyMenuPermissions(role) {
-    document.querySelectorAll(".sidebar-menu a").forEach(link => {
-      const allowedRoles = (link.dataset.role || "all").split(",");
-      if (allowedRoles.includes("all") || allowedRoles.includes(role)) {
-        link.classList.add("visible");
-      } else {
-        link.classList.remove("visible");
-      }
-    });
-  }
-
-  function formatDateYmd(dateStr) {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-
-  async function loadFarmInfo() {
-    const database = await ensureDb();
-    if (!database) return;
-    const { doc, getDoc } = await getFs();
-    try {
-      const snap = await getDoc(doc(database, "settings", FARM_SETTINGS_ID));
-      const topFarmNameEl = document.getElementById("topFarmName");
-      const topMetaEl = document.getElementById("topFarmMeta");
-      if (snap.exists()) {
-        const farm = snap.data();
-        if (topFarmNameEl) topFarmNameEl.textContent = farm.farmName || "강북구 스마트팜 재배단지";
-        if (topMetaEl) {
-          topMetaEl.innerHTML = `
-            <span>🌿 재배작물: ${farm.cropType || "딸기"}</span>
-            <span>🍓 품종: ${farm.variety || "금실"}</span>
-            <span>🌱 정식일: ${formatDateYmd(farm.plantingDate) || "-"}</span>
-          `;
-        }
-      } else {
-        if (topFarmNameEl) topFarmNameEl.textContent = "강북구 스마트팜 재배단지";
-        if (topMetaEl) topMetaEl.innerHTML = `<span style="color:#ffd700;">⚠️ 농장설정 미등록</span>`;
-      }
-    } catch (e) {
-      console.error("농장설정 오류:", e);
-    }
-  }
-
-  function checkAuth() {
-    const userStr = localStorage.getItem("user") || localStorage.getItem("user ");
-    const user = userStr ? JSON.parse(userStr) : null;
-    userRole = (localStorage.getItem("userRole") || localStorage.getItem("userRole ") || "").trim();
-    const allowRoles = [ROLE_ADMIN, ROLE_MANAGER];
-
-    if (!user || !user.userId || !userRole) {
-      location.href = "index.html";
-      return null;
-    }
-    if (!allowRoles.includes(userRole)) {
-      alert("접근 권한이 없습니다.");
-      location.href = "dashboard.html";
-      return null;
-    }
-
-    const userName = user.userName || user.userId || "사용자";
-    const userNameEl = document.getElementById("sidebarUserName");
-    if (userNameEl) userNameEl.textContent = `${userName} ${getRoleName(userRole)}`;
-    applyMenuPermissions(userRole);
-
-    const adminArea = document.getElementById("adminArea");
-    if (adminArea) adminArea.style.display = "block";
-    return { user, userRole };
-  }
-
-  // =====================================================
-  // ✅ 급액 셋팅 = 순수 "기준"만 (공급시간 · 끝 배지 유량)
-  //    횟수(실적)는 배액기록에서 입력합니다.
-  // =====================================================
   function updateSupplyCalc() {
-    const minutes = parseFloat(document.getElementById("ssMinutes").value) || 0;
-    const flow = parseFloat(document.getElementById("ssFlow").value) || 0;
-    const perEvent = (minutes / 60) * flow;
-    document.getElementById("ssPerEvent").value = perEvent > 0 ? `${perEvent.toFixed(2)} L` : "";
+    const minutes = parseFloat(document.getElementById("ssMinutes").value);
+    const flow = parseFloat(document.getElementById("ssFlow").value);
+    const el = document.getElementById("ssPerEvent");
+    if (!isNaN(minutes) && !isNaN(flow) && minutes > 0 && flow > 0) {
+      const perEventL = (minutes / 60) * flow;
+      const perEventMl = Math.round(perEventL * 1000);
+      el.value = `${perEventMl} mL (${perEventL.toFixed(2)} L)`;
+    } else {
+      el.value = "";
+    }
+  }
+
+  // 🌱 드리퍼 개수와 규격으로 간편 계산 (예: 5개 × 2L = 10L/h)
+  function calcByDripper(count = 5, specLph = 2) {
+    const totalFlow = count * specLph;
+    const flowInput = document.getElementById("ssFlow");
+    const minInput = document.getElementById("ssMinutes");
+    if (flowInput) flowInput.value = totalFlow;
+    if (minInput && !minInput.value) minInput.value = 3;
+    updateSupplyCalc();
+  }
+
+  // 🧪 비커 실측치로 간편 계산 (예: 3분 동안 500mL 받음 ➔ 10L/h)
+  function promptMeasureCalc() {
+    const curMin = document.getElementById("ssMinutes").value || "3";
+    const minStr = prompt("측정한 시간(분)을 입력하세요:", curMin);
+    if (!minStr) return;
+    const mins = parseFloat(minStr);
+    if (isNaN(mins) || mins <= 0) return alert("시간을 올바르게 입력하세요.");
+
+    const mlStr = prompt("해당 시간 동안 배지 1개(드리퍼 5개 전체)에서 받아낸 총 배액/급액량(mL)을 입력하세요:", "500");
+    if (!mlStr) return;
+    const ml = parseFloat(mlStr);
+    if (isNaN(ml) || ml <= 0) return alert("용량을 올바르게 입력하세요.");
+
+    // 시간당 유량(L/h) 역산 = (ml / 1000) / (mins / 60)
+    const lph = (ml / 1000) / (mins / 60);
+    const roundedFlow = Math.round(lph * 100) / 100;
+
+    document.getElementById("ssMinutes").value = mins;
+    document.getElementById("ssFlow").value = roundedFlow;
+    updateSupplyCalc();
+    alert(`✅ 계산 완료!\n- 공급시간: ${mins}분\n- 끝 배지 유량: ${roundedFlow} L/h\n- 1회 급액량: ${ml} mL`);
   }
 
   async function saveSupplySetting() {
     const settingDate = document.getElementById("ssDate").value;
     const lineNo = document.getElementById("ssLine").value;
     const supplyMethod = document.getElementById("ssMethod").value;
-    const minutesPerEvent = parseFloat(document.getElementById("ssMinutes").value);
-    const flowRatePerBag = parseFloat(document.getElementById("ssFlow").value);
+    const minutes = parseFloat(document.getElementById("ssMinutes").value);
+    const flow = parseFloat(document.getElementById("ssFlow").value);
+    const editId = document.getElementById("ssEditId").value;
 
     if (!settingDate) return alert("적용일자를 입력하세요!");
-    if (isNaN(minutesPerEvent) || minutesPerEvent <= 0) return alert("공급시간(분)을 입력하세요!");
-    if (isNaN(flowRatePerBag) || flowRatePerBag <= 0) return alert("끝 배지 유량(L/h)을 입력하세요!");
+    if (isNaN(minutes) || minutes <= 0) return alert("공급시간(분/회)을 올바르게 입력하세요!");
+    if (isNaN(flow) || flow <= 0) return alert("끝 배지 유량(L/h)을 올바르게 입력하세요!");
+
+    const perEventL = Math.round((minutes / 60) * flow * 100) / 100;
 
     const data = {
-      settingDate, lineNo, supplyMethod,
-      minutesPerEvent, flowRatePerBag,
-      perEventL: Math.round(((minutesPerEvent / 60) * flowRatePerBag) * 100) / 100,
+      settingDate,
+      lineNo,
+      supplyMethod,
+      minutesPerEvent: minutes,
+      flowRatePerBag: flow,
+      perEventL,
       updatedAt: new Date().toISOString()
     };
 
     const database = await ensureDb();
     if (!database) return;
-    const { doc, setDoc, addDoc, collection } = await getFs();
-    const editId = document.getElementById("ssEditId").value;
+    const { collection, doc, addDoc, setDoc } = await getFs();
 
     try {
       if (editId) {
         await setDoc(doc(database, SS_COLLECTION, editId), data, { merge: true });
-        alert("✅ 수정되었습니다!");
+        alert("✅ 급액 셋팅이 수정되었습니다!");
       } else {
         data.createdAt = new Date().toISOString();
         await addDoc(collection(database, SS_COLLECTION), data);
-        alert("✅ 등록되었습니다!");
+        alert("✅ 급액 셋팅이 등록되었습니다!");
       }
       resetSupplyForm();
       await loadSupplySettings();
@@ -170,13 +114,14 @@
   async function loadSupplySettings() {
     const database = await ensureDb();
     if (!database) return;
-    const { collection, getDocs } = await getFs();
+    const { collection, getDocs, query, orderBy } = await getFs();
     try {
-      const snap = await getDocs(collection(database, SS_COLLECTION));
-      supplySettings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const q = query(collection(database, SS_COLLECTION), orderBy("settingDate", "desc"));
+      const snap = await getDocs(q);
+      supplySettings = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       supplySettings.sort((a, b) => {
-        const dCmp = String(b.settingDate || "").localeCompare(String(a.settingDate || ""));
-        if (dCmp !== 0) return dCmp;
+        const dDiff = String(b.settingDate || "").localeCompare(String(a.settingDate || ""));
+        if (dDiff !== 0) return dDiff;
         return String(a.lineNo || "").localeCompare(String(b.lineNo || ""));
       });
       renderSupplyList();
@@ -194,8 +139,9 @@
       tb.innerHTML = `<tr><td colspan="7" class="empty-box">등록된 급액 셋팅이 없습니다.</td></tr>`;
       return;
     }
-    tb.innerHTML = supplySettings.map(s => {
-      const perEvent = s.perEventL != null ? s.perEventL
+    tb.innerHTML = supplySettings.map((s) => {
+      const perEvent = s.perEventL != null
+        ? s.perEventL
         : ((parseFloat(s.minutesPerEvent) / 60) * parseFloat(s.flowRatePerBag)).toFixed(2);
       return `
       <tr>
@@ -214,7 +160,7 @@
   }
 
   function editSupplySetting(id) {
-    const s = supplySettings.find(x => x.id === id);
+    const s = supplySettings.find((x) => x.id === id);
     if (!s) return;
     document.getElementById("ssEditId").value = id;
     document.getElementById("ssDate").value = s.settingDate || "";
@@ -237,18 +183,18 @@
       alert("✅ 삭제되었습니다!");
       await loadSupplySettings();
     } catch (e) {
-      alert("❌ 삭제 실: " + e.message);
+      alert("❌ 삭제 실패: " + e.message);
     }
   }
 
   function copyLastSetting() {
     const line = document.getElementById("ssLine").value;
-    let src = supplySettings.find(s => s.lineNo === line);
+    let src = supplySettings.find((s) => s.lineNo === line);
     if (!src) src = supplySettings[0];
     if (!src) return alert("복사할 기존 등록이 없습니다.");
 
     document.getElementById("ssEditId").value = "";
-    document.getElementById("ssDate").valueAsDate = new Date();
+    document.getElementById("ssDate").value = window.toLocalYmd ? window.toLocalYmd(new Date()) : new Date().toISOString().slice(0, 10);
     document.getElementById("ssLine").value = src.lineNo || line;
     document.getElementById("ssMethod").value = src.supplyMethod || "적산일사";
     document.getElementById("ssMinutes").value = src.minutesPerEvent || "";
@@ -259,7 +205,7 @@
 
   function resetSupplyForm() {
     document.getElementById("ssEditId").value = "";
-    document.getElementById("ssDate").valueAsDate = new Date();
+    document.getElementById("ssDate").value = window.toLocalYmd ? window.toLocalYmd(new Date()) : new Date().toISOString().slice(0, 10);
     document.getElementById("ssLine").value = "V01";
     document.getElementById("ssMethod").value = "적산일사";
     document.getElementById("ssMinutes").value = "";
@@ -269,7 +215,7 @@
   }
 
   // =====================================================
-  // ✅ 기존 급액기준(EC/pH) 기능
+  // ✅ 기준(EC/pH) 관리 기능
   // =====================================================
   async function loadList() {
     const database = await ensureDb();
@@ -278,33 +224,37 @@
     try {
       const q = query(collection(database, "supply_standards"), orderBy("standardDate", "desc"));
       const snap = await getDocs(q);
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderList(list);
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => {
+        const dDiff = String(b.standardDate || "").localeCompare(String(a.standardDate || ""));
+        if (dDiff !== 0) return dDiff;
+        return String(a.lineNo || a.line || "").localeCompare(String(b.lineNo || b.line || ""));
+      });
+      renderStandardList(list);
     } catch (e) {
-      console.error("목록 불러오기 오류:", e);
-      document.getElementById("listBody").innerHTML = `<tr><td colspan="8" class="empty-box">오류: ${e.message}</td></tr>`;
+      console.error("기준목록 불러오기 오류", e);
     }
   }
 
-  function renderList(list) {
+  function renderStandardList(list) {
     const tb = document.getElementById("listBody");
     if (!tb) return;
     if (!list.length) {
-      tb.innerHTML = `<tr><td colspan="8" class="empty-box">등록된 기준이 없습니다. 위에서 먼저 등록하세요.</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="8" class="empty-box">등록된 기준이 없습니다.</td></tr>`;
       return;
     }
-    tb.innerHTML = list.map(r => `
+    tb.innerHTML = list.map((item) => `
       <tr>
-        <td>${r.periodName || "-"}</td>
-        <td>${r.standardDate || "-"}</td>
-        <td>${r.lineNo || r.line || "V01"}</td>
-        <td>${r.targetEc || r.supplyEc || "-"}</td>
-        <td>${r.targetPh || r.supplyPh || "-"}</td>
-        <td>${r.drainRate || "-"}%</td>
-        <td>${r.remark || "-"}</td>
-        <td>
-          <span class="edit-link" onclick="editItem('${r.id}')">수정</span>
-          ${(userRole === 'admin' || userRole === 'manager') ? `<span class="del-link" onclick="delItem('${r.id}')">삭제</span>` : ""}
+        <td><strong>${item.periodName || "-"}</strong></td>
+        <td>${item.standardDate || "-"}</td>
+        <td>${item.lineNo || item.line || "V01"}</td>
+        <td>${item.targetEc != null && !isNaN(item.targetEc) ? parseFloat(item.targetEc).toFixed(2) : "-"}</td>
+        <td>${item.targetPh != null && !isNaN(item.targetPh) ? parseFloat(item.targetPh).toFixed(2) : "-"}</td>
+        <td>${item.drainRate ? item.drainRate + "%" : "-"}</td>
+        <td>${item.remark || "-"}</td>
+        <td class="action-btns">
+          <button class="btn-sm btn-primary" onclick="editItem('${item.id}')">수정</button>
+          <button class="btn-sm btn-danger" onclick="delItem('${item.id}')">삭제</button>
         </td>
       </tr>
     `).join("");
@@ -320,24 +270,29 @@
     const remark = document.getElementById("remark").value.trim();
     const editId = document.getElementById("editId").value;
 
-    if (!periodName) return alert("생육단계명을 입력하세요!\n(예: 활착기, 비대기, 수확기)");
+    if (!periodName) return alert("생육단계를 입력하세요!");
     if (!standardDate) return alert("적용일자를 입력하세요!");
-    if (!targetEc || !targetPh) return alert("목표 EC와 pH 값을 입력하세요!");
-
-    const data = {
-      periodName, standardDate, lineNo,
-      line: lineNo,
-      targetEc: parseFloat(targetEc), targetPh: parseFloat(targetPh),
-      supplyEc: parseFloat(targetEc), supplyPh: parseFloat(targetPh),
-      drainRate: drainRate ? parseInt(drainRate) : null,
-      remark, updatedAt: new Date().toISOString()
-    };
+    if (!targetEc) return alert("목표 EC를 입력하세요!");
+    if (!targetPh) return alert("목표 pH를 입력하세요!");
 
     const database = await ensureDb();
     if (!database) return;
-    const { doc, setDoc, addDoc, collection } = await getFs();
+    const { collection, doc, addDoc, setDoc } = await getFs();
 
     try {
+      const data = {
+        periodName,
+        standardDate,
+        lineNo,
+        targetEc: parseFloat(targetEc),
+        targetPh: parseFloat(targetPh),
+        drainRate: drainRate ? parseFloat(drainRate) : null,
+        supplyEc: parseFloat(targetEc),
+        supplyPh: parseFloat(targetPh),
+        remark,
+        updatedAt: new Date().toISOString()
+      };
+
       if (editId) {
         await setDoc(doc(database, "supply_standards", editId), data, { merge: true });
         alert("✅ 수정되었습니다!");
@@ -356,24 +311,23 @@
   async function editItem(id) {
     const database = await ensureDb();
     if (!database) return;
-    const { collection, getDocs } = await getFs();
+    const { doc, getDoc } = await getFs();
     try {
-      const snap = await getDocs(collection(database, "supply_standards"));
-      const found = snap.docs.find(d => d.id === id);
-      if (!found) return alert("데이터를 찾을 수 없습니다.");
-      const r = found.data();
+      const snap = await getDoc(doc(database, "supply_standards", id));
+      if (!snap.exists()) return alert("문서를 찾을 수 없습니다.");
+      const d = snap.data();
       document.getElementById("editId").value = id;
-      document.getElementById("periodName").value = r.periodName || "";
-      document.getElementById("standardDate").value = r.standardDate || "";
-      document.getElementById("lineNo").value = r.lineNo || r.line || "V01";
-      document.getElementById("targetEc").value = r.targetEc || r.supplyEc || "";
-      document.getElementById("targetPh").value = r.targetPh || r.supplyPh || "";
-      document.getElementById("drainRate").value = r.drainRate || "";
-      document.getElementById("remark").value = r.remark || "";
+      document.getElementById("periodName").value = d.periodName || "";
+      document.getElementById("standardDate").value = d.standardDate || "";
+      document.getElementById("lineNo").value = d.lineNo || d.line || "V01";
+      document.getElementById("targetEc").value = d.targetEc ?? d.supplyEc ?? "";
+      document.getElementById("targetPh").value = d.targetPh ?? d.supplyPh ?? "";
+      document.getElementById("drainRate").value = d.drainRate || "";
+      document.getElementById("remark").value = d.remark || "";
       document.getElementById("formTitle").textContent = "✏️ 기준 수정";
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
-      alert("수정 오류: " + e.message);
+      alert("❌ 조회 실패: " + e.message);
     }
   }
 
@@ -395,7 +349,7 @@
     document.getElementById("editId").value = "";
     document.getElementById("periodName").value = "";
     const standardDateEl = document.getElementById("standardDate");
-    if (standardDateEl) standardDateEl.valueAsDate = new Date();
+    if (standardDateEl) standardDateEl.value = window.toLocalYmd ? window.toLocalYmd(new Date()) : new Date().toISOString().slice(0, 10);
     document.getElementById("lineNo").value = "V01";
     document.getElementById("targetEc").value = "";
     document.getElementById("targetPh").value = "";
@@ -405,36 +359,21 @@
   }
 
   function bindEvents() {
-    document.addEventListener("click", e => {
-      if (e.target.id === "hamBtn" || e.target.closest("#hamBtn")) {
-        document.getElementById("sidebar").classList.toggle("open");
-        document.getElementById("overlay").classList.toggle("show");
-      }
-      if (e.target.id === "sidebarLogoutBtn" || e.target.closest("#sidebarLogoutBtn")) {
-        e.preventDefault();
-        if (confirm("로그아웃 하시겠습니까?")) {
-          localStorage.removeItem("user");
-          localStorage.removeItem("userRole");
-          location.href = "index.html";
-        }
-      }
-    });
-
-    ["ssMinutes", "ssFlow"].forEach(id => {
+    ["ssMinutes", "ssFlow"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.addEventListener("input", updateSupplyCalc);
     });
   }
 
   async function init() {
-    const auth = checkAuth();
+    const auth = window.checkAuth ? window.checkAuth(["admin", "manager"]) : null;
     if (!auth) return;
 
     bindEvents();
-    await loadFarmInfo();
 
     const ssDateEl = document.getElementById("ssDate");
-    if (ssDateEl) ssDateEl.valueAsDate = new Date();
+    if (ssDateEl) ssDateEl.value = window.toLocalYmd ? window.toLocalYmd(new Date()) : new Date().toISOString().slice(0, 10);
+    resetForm();
 
     await loadList();
     await loadSupplySettings();
@@ -449,6 +388,8 @@
   window.deleteSupplySetting = deleteSupplySetting;
   window.copyLastSetting = copyLastSetting;
   window.resetSupplyForm = resetSupplyForm;
+  window.calcByDripper = calcByDripper;
+  window.promptMeasureCalc = promptMeasureCalc;
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

@@ -25,22 +25,80 @@
   const ROLE_ADMIN = "admin";
   const ROLE_MANAGER = "manager";
 
-
   // ✅ 로컬 날짜 → "YYYY-MM-DD" 문자열 (UTC 함정 회피)
   function toLocalYmd(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
 
   // =====================================================
-  // ✅ 역할별 맞춤 분석 (과목별 시험지)
+  // 🍓 마크다운 렌더러 (테이블, 서식 등 HTML 변환)
   // =====================================================
-  const ROLE_LABEL = { general: "종합", drain: "배액·관수", anomaly: "이상탐지", growth: "생육단계" };
+  function renderMarkdown(mdText) {
+    if (!mdText) return "";
+    if (typeof marked !== "undefined" && typeof marked.parse === "function") {
+      try {
+        return marked.parse(mdText, { breaks: true, gfm: true });
+      } catch (e) {
+        console.warn("marked 파싱 오류:", e);
+      }
+    }
+    return mdText
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n/g, "<br>");
+  }
+
+  // =====================================================
+  // 🍓 딸기 장인(Master Craftsman) 역할별 프롬프트
+  // =====================================================
+  const ROLE_LABEL = { general: "종합진단", drain: "관수·배액", anomaly: "이상탐지", growth: "생육단계" };
 
   const ROLE_PROMPTS = {
-    general: "당신은 전체 농장 관리 책임자입니다. EC·pH·배액율·구역 패턴을 종합 진단하여 ① 전체 건강도 요약 ② 최우선 조치 3가지 ③ 주간 관리 계획을 우선순위순으로 제시하세요.",
-    drain: "당신은 관수(급액) 전문가입니다. 배액율(목표 대비 ±10%p 정상 / ±20%p 주의)에만 집중하여 ① 과관수/과소관수 구역 특정 ② 급액횟수·시간 조정 제안 ③ 흐린날/맑은날 대응 전략을 제시하세요. EC·pH 일반론은 생략하세요.",
-    anomaly: "당신은 이상징후 탐지 전문가입니다. 정상 범위 이탈·급격한 변동·구역 간 편차만 찾아 ① 이상 기록 특정(날짜/구역/값) ② 추정 원인(센서오류/막힘/염류집적 등) ③ 긴급 조치 여부를 판정하세요. 이상 없으면 '이상 없음'으로 짧게 답하세요.",
-    growth: "당신은 딸기 생육 단계 전문가입니다. 현재 생육단계 대비 EC·pH 기준치가 적절한지, 단계 전환 시 기준을 어떻게 조정(인상/인하)할지만 조언하세요. 관수 횟수 계산은 생략하세요."
+    general: `당신은 대한민국 최고 권위의 30년 경력 고설베드 코코피트 딸기 수경재배 마스터 장인이자 친절한 스마트팜 멘토입니다.
+초보 농부도 단번에 이해할 수 있도록 명쾌하고 쉬운 농가 비유와 함께, 오늘 당장 양액기 제어판에서 무엇을 눌러야 할지 구체적인 수치(Action Plan)로 지도합니다.
+
+[출력 양식 규칙]
+반드시 다음 4단계 구조로 작성하고, 구역별 진단과 조치 처방은 마크다운 테이블(표) 형식을 적극 활용하여 가독성을 극대화하세요.
+1. 🚦 【오늘의 하우스 건강 신호등 & 3줄 요약】
+   - 종합 상태 (🟢 양호 / 🟡 주의 / 🔴 경고)
+   - 핵심 요약 3문장 (현재 작물 수분·비료 흡수 상태를 쉬운 비유로 설명)
+2. 🛠️ 【장인의 오늘 당장 할 일 (양액기 제어 처방)】
+   - 양액기 공급 EC 변경 수치 (예: [1.3] ➔ [1.2]로 0.1 인하 등 구체적 지시)
+   - 1회 급액 시간 및 1일 공급횟수(회) 변경 권장안
+   - 배액 플러싱(세척) 또는 공급량 조절 필요 여부
+3. 📍 【구역(라인)별 비교 진단 및 조치표】 (마크다운 표 형식 필수)
+   | 구역명 | 양액라인 | 배액EC 편차 | 배액율(%) | 진단 상태 | 장인의 긴급 조치사항 |
+4. 💡 【장인의 날씨 맞춤 꿀팁 & 대비책】
+   - 현재/예보 날씨(맑음·흐림·기온)에 따른 오늘 오후 및 내일 선제적 관리 포인트`,
+
+    drain: `당신은 고설베드 코코피트 딸기 관수(급액·배액) 분야의 최고 기술 장인입니다.
+배액율(목표 대비 15~25% 적정)과 수분 밸런스에 집중하여 농가에 가장 정확한 관수 스케줄을 처방합니다.
+
+[출력 양식 규칙]
+1. 💧 【수분 밸런스 총평 (과관수 vs 과소관수 판정)】
+2. 🛠️ 【구역별 관수 스케줄 맞춤 처방표】 (마크다운 표 형식 필수)
+   | 구역 | 현재 배액율 | 목표 대비 상태 | 1일 권장 급액횟수 | 1회 공급시간 | 조치 이유 |
+3. 🚨 【드리퍼 막힘/공급 불균일 의심 라인 지목】
+4. ☀️ 【날씨(맑은날/흐린날)별 급액 시작/종료 타이밍 팁】`,
+
+    anomaly: `당신은 딸기 스마트팜 이상징후 응급 진단 전문 마스터입니다.
+정상 범위 이탈(EC 급증, 배액 급감, pH 급변), 구역 간 편차, 센서/드리퍼 고장 징후를 매의 눈으로 찾아냅니다.
+
+[출력 양식 규칙]
+1. 🚨 【긴급 위험 구역 및 이상 징후 요약】 (이상 없으면 '이상 없음' 판정)
+2. 📋 【이상 의심 데이터 정밀 분석표】 (마크다운 표 형식 필수)
+   | 발생일시 | 구역/라인 | 측정 항목 및 수치 | 추정 원인 (염류집적/관수막힘/센서오류) | 긴급 조치 |
+3. 🩺 【뿌리 부패 및 팁번 예방 응급 처방전】`,
+
+    growth: `당신은 딸기 생육단계별 영양 및 화방 관리 전문 마스터입니다.
+정식 후 일수, 생육 단계, 품종 특성에 맞추어 양액 처방의 적합성을 코칭합니다.
+
+[출력 양식 규칙]
+1. 🌱 【현재 생육 단계 및 초세 영양 총평】
+2. ⚖️ 【생육 단계별 양액 기준 적정도 평가표】 (마크다운 표 형식 필수)
+   | 생육단계 | 현재 목표EC | 배액EC 반응 | 목표 배액율 | 권장 보정치 |
+3. 🍓 【다음 단계 전환 시 장인의 양액 관리 조언】`
   };
 
   function detectRole(ai) {
@@ -53,11 +111,31 @@
   }
 
   function buildDataSummary(roleKey, records, sDate, eDate, st) {
+    const wDesc = document.getElementById("weatherDesc")?.textContent || "맑음";
+    const wTemp = document.getElementById("weatherTemp")?.textContent || "-";
+    let plantingDays = "";
+    if (gFarmData && gFarmData.plantingDate) {
+      const pD = new Date(gFarmData.plantingDate);
+      if (!isNaN(pD.getTime())) {
+        const diff = Math.floor((new Date() - pD) / (1000 * 60 * 60 * 24));
+        plantingDays = diff >= 0 ? `(정식 후 ${diff}일차)` : "";
+      }
+    }
+
     const head = `
-【강북구 스마트팜 딸기 배액관리 — ${ROLE_LABEL[roleKey]} 분석 데이터】
-▸ 분석기간: ${sDate} ~ ${eDate}
-▸ 전체 ${records.length}건 / EC·pH: 정상 ${st.ok} / 주의 ${st.warn} / 경고 ${st.danger}
-▸ 배액율(목표 대비): 정상 ${st.ratioOk} / 주의 ${st.ratioWarn} / 경고 ${st.ratioDanger} / 미계산 ${st.ratioNone}`;
+【🍓 강북구 스마트팜 딸기 하우스 현장 물리적 조건 및 분석 데이터】
+▸ 재배환경: 고설베드(High-bench) + 코코피트 배지 (수분보유력·완충능 우수)
+▸ 관수설비: 배지(슬라브) 1개당 시간당 2L 드리퍼 5개 꽂힘 = 슬라브당 10L/h 유량
+▸ 1회 급액량: 3분 가동 시 약 500mL/슬라브 공급됨
+▸ 1일 총급액량 계산: 500mL × 공급횟수(회)
+▸ 적정 배액율 기준: 15% ~ 25% (맑은날 20~25%, 흐린날 10~15%)
+▸ EC 판정 기준: 배액EC vs (기준EC + 0.2), 편차 +0.4 이상=염류집적(농축), -0.3 이하=흡수왕성/비료부족
+▸ pH 판정 기준: 5.5~6.5 적정 (5.3 이하 산성화 칼슘흡수저해, 6.8 이상 알칼리화 철분결핍)
+▸ 농장정보: ${gFarmData ? `작물:${gFarmData.cropType || "딸기"} / 품종:${gFarmData.variety || "금실"} / 정식일:${formatDateYmd(gFarmData.plantingDate)} ${plantingDays} / 시즌:${gFarmData.season || "-"}` : "딸기 코코피트 수경재배"}
+▸ 현재날씨: ${wDesc} (기온: ${wTemp})
+▸ 분석기간: ${sDate} ~ ${eDate} (총 ${records.length}건 기록)
+▸ 종합판정 통계: EC·pH 정상 ${st.ok}건 / 주의 ${st.warn}건 / 경고 ${st.danger}건
+▸ 배액율 통계: 적정 ${st.ratioOk}건 / 주의 ${st.ratioWarn}건 / 경고 ${st.ratioDanger}건 / 미계산 ${st.ratioNone}건`;
 
     if (roleKey === "drain") {
       const byLine = {};
@@ -81,7 +159,7 @@
 ${lineRows || "- 없음"}
 ▸ 배액 측정기록 (최신순 최대30):
 ${recRows || "- 없음"}
-위 배액율 데이터만으로 관수 적정성을 진단하세요.`.trim();
+위 배액율 데이터와 하우스 관수 물리 스펙으로 관수 적정성을 진단하세요.`.trim();
     }
 
     if (roleKey === "anomaly") {
@@ -94,7 +172,7 @@ ${recRows || "- 없음"}
       return `${head}
 ▸ 이상 의심 기록 (주의/경고만, 최대30):
 ${bad || "- 없음 (기간 내 이상 없음)"}
-위 이상 의심 기록만 분석하세요.`.trim();
+위 이상 의심 기록만 집중 분석하세요.`.trim();
     }
 
     if (roleKey === "growth") {
@@ -123,7 +201,7 @@ ${recent || "- 없음"}
       const s2 = checkStatus(r);
       return `${r.measureDate} ${r.measureTime || ""} | ${r.zoneName} | EC:${r.drainEc || "-"}(${s2.ecDev}) | pH:${r.drainPh || "-"}(${s2.phDev}) | 배액:${r.drainAmount ? r.drainAmount + "mL" : "-"}${s2.ratio != null ? `(배액율 ${s2.ratio}%${s2.targetRate ? "/목표" + s2.targetRate + "%" : ""})` : ""} | ${s2.statusText}`;
     }).join("\n")}
-위 데이터를 분석하고 개선점과 권장사항을 제시해주세요.`.trim();
+위 데이터를 분석하고 개선점과 구체적인 양액기 처방 권장사항을 표를 포함하여 제시해주세요.`.trim();
   }
 
   // =====================================================
@@ -138,20 +216,6 @@ ${recent || "- 없음"}
     if (db) return db;
     if (typeof window.initFirebaseIfNeeded === "function") {
       db = await window.initFirebaseIfNeeded();
-    }
-    if (!db) {
-      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js");
-      const { getFirestore } = await getFs();
-      const firebaseConfig = {
-        apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
-        authDomain: "smartfarm-drainage-system.firebaseapp.com",
-        projectId: "smartfarm-drainage-system",
-        storageBucket: "smartfarm-drainage-system.firebasestorage.app",
-        messagingSenderId: "699907108321",
-        appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
-        measurementId: "G-W7L21Y8JZN"
-      };
-      db = getFirestore(initializeApp(firebaseConfig));
     }
     return db;
   }
@@ -182,14 +246,6 @@ ${recent || "- 없음"}
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
-  // ✅ 측정일(D)의 공급일(D-1) 문자열 반환 (컵의 물은 전날 공급의 결과)
-  function getSupplyDateStr(measureDate) {
-    const d = new Date(measureDate + "T00:00:00");
-    d.setDate(d.getDate() - 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }
-
-
   async function loadFarmInfo() {
     const database = await ensureDb();
     if (!database) return;
@@ -217,75 +273,12 @@ ${recent || "- 없음"}
       console.error("농장설정 오류:", e);
     }
   }
-   
+
   function checkStatus(r) {
-    const recLine = r.line || r.lineNo || "V01";
-    const supplyDateStr = getSupplyDateStr(r.measureDate);
-    const std = standards.filter(s => {
-      const stdLine = s.lineNo || s.line || "V01";
-      return s.standardDate <= supplyDateStr && stdLine === recLine;
-    }).sort((a, b) => b.standardDate.localeCompare(a.standardDate))[0];
-
-    if (!std) {
-      return { level: "none", ecDev: "-", phDev: "-", supEc: "-", supPh: "-", statusText: "기준없음", statusColor: "#888", ratio: null, ratioColor: "#999", targetRate: null, supplyCount: null };
+    if (typeof window.calcDrainStatus === "function") {
+      return window.calcDrainStatus(r, standards, supplySettings);
     }
-
-    const rawEc = (std.targetEc !== undefined && std.targetEc !== null && std.targetEc !== "") ? std.targetEc : std.supplyEc;
-    const rawPh = (std.targetPh !== undefined && std.targetPh !== null && std.targetPh !== "") ? std.targetPh : std.supplyPh;
-    const supEc = parseFloat(rawEc) || 0;
-    const supPh = parseFloat(rawPh) || 0;
-    const drainEc = parseFloat(r.drainEc);
-    const drainPh = parseFloat(r.drainPh);
-    const compEc = supEc + 0.2;
-    const ecDev = (drainEc - compEc).toFixed(2);
-    const phDev = (drainPh - supPh).toFixed(2);
-    const eD = parseFloat(ecDev);
-    const pD = parseFloat(phDev);
-
-    let ecLevel = "ok";
-    if (eD >= 0.7 || eD <= -0.5) ecLevel = "danger";
-    else if ((eD >= 0.4 && eD <= 0.6) || (eD <= -0.31 && eD >= -0.4)) ecLevel = "warn";
-
-    let phLevel = "ok";
-    if (pD >= 0.9 || pD <= -0.7 || drainPh >= 6.8 || drainPh <= 5.2) phLevel = "danger";
-    else if ((pD >= 0.5 && pD <= 0.8) || (pD <= -0.41 && pD >= -0.6)) phLevel = "warn";
-
-    let level = "ok";
-    if (ecLevel === "danger" || phLevel === "danger") level = "danger";
-    else if (ecLevel === "warn" || phLevel === "warn") level = "warn";
-
-    let ratio = null, ratioLevel = "none", supplyCount = null;
-    const targetRate = parseFloat(std.drainRate) || null;
-    const drainMl = parseFloat(r.drainAmount);
-    const events = parseFloat(r.supplyEvents); // ✅ 기록의 실측 횟수
-    const ss = supplySettings.filter(s => {
-      const ssLine = s.lineNo || s.line || "V01";
-      return ssLine === recLine && s.settingDate <= supplyDateStr; // ✅ D-1 기준
-    }).sort((a, b) => b.settingDate.localeCompare(a.settingDate))[0];
-
-    if (ss && events > 0 && !isNaN(drainMl) && drainMl > 0) {
-      const perEventL = (parseFloat(ss.minutesPerEvent) / 60) * parseFloat(ss.flowRatePerBag);
-      const dailyL = perEventL * events;
-      supplyCount = events;
-      if (dailyL > 0) {
-        ratio = (drainMl / 1000) / dailyL * 100;
-        if (targetRate) {
-          const ad = Math.abs(ratio - targetRate);
-          ratioLevel = ad <= 10 ? "ok" : ad <= 20 ? "warn" : "danger";
-        }
-      }
-    }
-    const ratioColor = ratioLevel === "ok" ? "#2e7d32" : ratioLevel === "warn" ? "#ef6c00" : ratioLevel === "danger" ? "#c62828" : "#999";
-
-    return {
-      level, ecDev, phDev,
-      supEc: rawEc !== undefined && rawEc !== null && rawEc !== "" ? rawEc : "-",
-      supPh: rawPh !== undefined && rawPh !== null && rawPh !== "" ? rawPh : "-",
-      statusText: level === "danger" ? "🚨 경고" : level === "warn" ? "⚠️ 주의" : "✅ 정상",
-      statusColor: level === "danger" ? "#c62828" : level === "warn" ? "#ef6c00" : "#2e7d32",
-      ratio: ratio === null ? null : Math.round(ratio * 10) / 10,
-      ratioColor, targetRate, supplyCount
-    };
+    return { level: "none", ecDev: "-", phDev: "-", supEc: "-", supPh: "-", statusText: "기준없음", statusColor: "#888", ratio: null, ratioColor: "#999", targetRate: null, supplyCount: null };
   }
 
   function checkAuth() {
@@ -370,12 +363,12 @@ ${recent || "- 없음"}
       const snap = await getDoc(doc(database, AI_LOG_COLLECTION, logId));
       if (snap.exists()) {
         const data = snap.data();
-        document.getElementById("modalBody").textContent = data.resultText || "내용이 없습니다.";
+        document.getElementById("modalBody").innerHTML = renderMarkdown(data.resultText || "내용이 없습니다.");
       } else {
-        document.getElementById("modalBody").textContent = "⚠️ 내용을 찾을 수 없습니다.";
+        document.getElementById("modalBody").innerHTML = "⚠️ 내용을 찾을 수 없습니다.";
       }
     } catch (e) {
-      document.getElementById("modalBody").textContent = "❌ 불러오기 실패: " + e.message;
+      document.getElementById("modalBody").innerHTML = "❌ 불러오기 실패: " + e.message;
     }
   }
 
@@ -615,7 +608,7 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
 
           document.querySelector(`#${cardId} h4 span`).textContent = "✅ 완료";
           document.querySelector(`#${cardId} h4 span`).style.color = "#2e7d32";
-          document.querySelector(`#${cardId} .result-body`).textContent = text;
+          document.querySelector(`#${cardId} .result-body`).innerHTML = renderMarkdown(text);
 
           const database = await ensureDb();
           const { collection, addDoc } = await getFs();
@@ -716,7 +709,7 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
         text = json?.choices?.[0]?.message?.content || json?.error?.message || "응답을 받아오지 못했습니다.";
       }
 
-      answerEl.textContent = text;
+      answerEl.innerHTML = renderMarkdown(text);
       ctx.history.push({ role: "model", text });
       ctx.fullText += `\n\n──────────\n[추가 질문] ${q}\n[답변] ${text}`;
 
@@ -817,18 +810,7 @@ ${ROLE_PROMPTS[roleKey]}${userGuide ? `\n추가 역할 가이드: ${userGuide}` 
 
   function bindEvents() {
     document.addEventListener("click", e => {
-      if (e.target.id === "hamBtn" || e.target.closest("#hamBtn")) {
-        document.getElementById("sidebar").classList.toggle("open");
-        document.getElementById("overlay").classList.toggle("show");
-      }
-      if (e.target.id === "sidebarLogoutBtn" || e.target.closest("#sidebarLogoutBtn")) {
-        e.preventDefault();
-        if (confirm("로그아웃 하시겠습니까?")) {
-          localStorage.removeItem("user");
-          localStorage.removeItem("userRole");
-          location.href = "index.html";
-        }
-      }
+      // ✅ 햄버거 버튼 및 로그아웃은 common.js가 전역 처리하므로 중복 토글 방지
 
       const fuBtn = e.target.closest(".followup-btn");
       if (fuBtn) {

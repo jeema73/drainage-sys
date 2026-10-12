@@ -1,10 +1,8 @@
 (() => {
   "use strict";
-  console.log("✅ drain-record.js 로드됨 (v261002)");
 
   let db = null;
   let fsMod = null;
-  const FARM_SETTINGS_ID = "current";
 
   let userRole = "";
   let zoneList = [];
@@ -20,11 +18,6 @@
   function canEdit() { return [ROLE_ADMIN, ROLE_MANAGER, ROLE_WORKER].includes(userRole); }
   function canApprove() { return [ROLE_ADMIN, ROLE_MANAGER].includes(userRole); }
 
-  // ✅ 로컬 날짜 → "YYYY-MM-DD" 문자열 (valueAsDate의 UTC 함정 회피)
-  function toLocalYmd(d) {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }
-
   async function getFs() {
     if (!fsMod) {
       fsMod = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js");
@@ -37,200 +30,15 @@
     if (typeof window.initFirebaseIfNeeded === "function") {
       db = await window.initFirebaseIfNeeded();
     }
-    if (!db) {
-      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js");
-      const { getFirestore } = await getFs();
-      const firebaseConfig = {
-        apiKey: "AIzaSyCfcMVOOn3l1XbUnp6yezqHPdHjAysA79k",
-        authDomain: "smartfarm-drainage-system.firebaseapp.com",
-        projectId: "smartfarm-drainage-system",
-        storageBucket: "smartfarm-drainage-system.firebasestorage.app",
-        messagingSenderId: "699907108321",
-        appId: "1:699907108321:web:b71e0ed0d3df141c7836a0",
-        measurementId: "G-W7L21Y8JZN"
-      };
-      db = getFirestore(initializeApp(firebaseConfig));
-    }
     return db;
   }
 
-  // ✅ 측정일(D)의 공급일(D-1) 문자열 반환 (컵의 물은 전날 공급의 결과)
-  function getSupplyDateStr(measureDate) {
-    const d = new Date(measureDate + "T00:00:00");
-    d.setDate(d.getDate() - 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }
-  
-  function getRoleName(role) {
-    const map = { admin: "최고관리자", manager: "매니저", worker: "공공근로자", guest: "게스트" };
-    return map[role] || role;
-  }
-
-  function applyMenuPermissions(role) {
-    document.querySelectorAll(".sidebar-menu a").forEach(link => {
-      const allowedRoles = (link.dataset.role || "all").split(",");
-      if (allowedRoles.includes("all") || allowedRoles.includes(role)) {
-        link.classList.add("visible");
-      } else {
-        link.classList.remove("visible");
-      }
-    });
-  }
-
-  function formatDateYmd(dateStr) {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-
-  async function loadFarmInfo() {
-    const database = await ensureDb();
-    if (!database) return;
-    const { doc, getDoc } = await getFs();
-    try {
-      const snap = await getDoc(doc(database, "settings", FARM_SETTINGS_ID));
-      const topFarmNameEl = document.getElementById("topFarmName");
-      const topMetaEl = document.getElementById("topFarmMeta");
-      if (snap.exists()) {
-        const farm = snap.data();
-        if (topFarmNameEl) topFarmNameEl.textContent = farm.farmName || "강북구 스마트팜 재배단지";
-        if (topMetaEl) {
-          topMetaEl.innerHTML = `
-            <span>🌿 재배작물: ${farm.cropType || "딸기"}</span>
-            <span>🍓 품종: ${farm.variety || "금실"}</span>
-            <span>🌱 정식일: ${formatDateYmd(farm.plantingDate) || "-"}</span>
-          `;
-        }
-      } else {
-        if (topFarmNameEl) topFarmNameEl.textContent = "강북구 스마트팜 재배단지";
-        if (topMetaEl) topMetaEl.innerHTML = `<span style="color:#ffd700;">⚠️ 농장설정 미등록</span>`;
-      }
-    } catch (e) {
-      console.error("농장설정 오류:", e);
-    }
-  }
-
-  async function loadWeather() {
-    try {
-      const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.63&longitude=127.03&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=1");
-      const data = await res.json();
-      const temp = Math.round(data.current.temperature_2m * 10) / 10;
-      const minTemp = Math.round(data.daily.temperature_2m_min[0]);
-      const maxTemp = Math.round(data.daily.temperature_2m_max[0]);
-      const code = data.current.weather_code;
-      let icon = "☀️", desc = "맑음";
-      if (code === 1 || code === 2) { icon = "🌤️"; desc = "구름조금"; }
-      else if (code === 3) { icon = "☁️"; desc = "흐림"; }
-      else if (code >= 45 && code <= 48) { icon = "🌫️"; desc = "안개"; }
-      else if (code >= 51 && code <= 67) { icon = "🌧️"; desc = "비"; }
-      else if (code >= 71 && code <= 77) { icon = "❄️"; desc = "눈"; }
-      else if (code >= 80 && code <= 82) { icon = "🌧️"; desc = "소나기"; }
-
-      const elIcon = document.getElementById("weatherIcon");
-      const elTemp = document.getElementById("weatherTemp");
-      const elDesc = document.getElementById("weatherDesc");
-      const elRange = document.getElementById("weatherRange");
-      if (elIcon) elIcon.textContent = icon;
-      if (elTemp) elTemp.textContent = `${temp}°`;
-      if (elDesc) elDesc.textContent = desc;
-      if (elRange) elRange.textContent = `최저 ${minTemp}° / 최고 ${maxTemp}°`;
-    } catch (e) {
-      const elDesc = document.getElementById("weatherDesc");
-      if (elDesc) elDesc.textContent = "날씨 불러오기 실패";
-    }
-  }
-
-  function checkAuth() {
-    const userStr = localStorage.getItem("user") || localStorage.getItem("user ");
-    const user = userStr ? JSON.parse(userStr) : null;
-    userRole = (localStorage.getItem("userRole") || localStorage.getItem("userRole ") || "").trim();
-
-    if (!user || !user.userId || !userRole) {
-      location.href = "index.html";
-      return null;
-    }
-
-    const userName = user.userName || user.userId || "사용자";
-    const userNameEl = document.getElementById("sidebarUserName");
-    if (userNameEl) userNameEl.textContent = `${userName} ${getRoleName(userRole)}`;
-    applyMenuPermissions(userRole);
-
-    const adminArea = document.getElementById("adminArea");
-    if (adminArea) adminArea.style.display = "block";
-    return { user, userRole };
-  }
-
-  // ✅ 상태 판정 (EC/pH + 배액율)
-  // 배액율 = 배액량(L) ÷ (당일 횟수 × 1회 시간 × 끝 배지 유량 ÷ 60) × 100
+  // ✅ 상태 판정 — common.js 공통 로직 활용
   function checkStatus(r) {
-    const recLine = r.line || r.lineNo || "V01";
-    const supplyDateStr = getSupplyDateStr(r.measureDate); // ✅ 공급일(D-1)
-    const std = standards.filter(s => {
-      const stdLine = s.lineNo || s.line || "V01";
-      return s.standardDate <= supplyDateStr && stdLine === recLine;
-    }).sort((a, b) => b.standardDate.localeCompare(a.standardDate))[0];
-
-    if (!std) {
-      return { level: "none", ecDev: "-", phDev: "-", supEc: "-", supPh: "-", statusText: "기준없음", statusColor: "#888", ratio: null, ratioColor: "#999", targetRate: null };
+    if (typeof window.calcDrainStatus === "function") {
+      return window.calcDrainStatus(r, standards, supplySettings);
     }
-
-    const rawEc = (std.targetEc !== undefined && std.targetEc !== null && std.targetEc !== "") ? std.targetEc : std.supplyEc;
-    const rawPh = (std.targetPh !== undefined && std.targetPh !== null && std.targetPh !== "") ? std.targetPh : std.supplyPh;
-    const supEc = parseFloat(rawEc) || 0;
-    const supPh = parseFloat(rawPh) || 0;
-    const drainEc = parseFloat(r.drainEc);
-    const drainPh = parseFloat(r.drainPh);
-    const compEc = supEc + 0.2;
-    const ecDev = (drainEc - compEc).toFixed(2);
-    const phDev = (drainPh - supPh).toFixed(2);
-    const eD = parseFloat(ecDev);
-    const pD = parseFloat(phDev);
-
-    let ecLevel = "ok";
-    if (eD >= 0.7 || eD <= -0.5) ecLevel = "danger";
-    else if ((eD >= 0.4 && eD <= 0.6) || (eD <= -0.31 && eD >= -0.4)) ecLevel = "warn";
-
-    let phLevel = "ok";
-    if (pD >= 0.9 || pD <= -0.7 || drainPh >= 6.8 || drainPh <= 5.2) phLevel = "danger";
-    else if ((pD >= 0.5 && pD <= 0.8) || (pD <= -0.41 && pD >= -0.6)) phLevel = "warn";
-
-    let level = "ok";
-    if (ecLevel === "danger" || phLevel === "danger") level = "danger";
-    else if (ecLevel === "warn" || phLevel === "warn") level = "warn";
-
-    // ✅ 배액율: 기록의 supplyEvents(실적) × 급액셋팅(기준)
-    let ratio = null, ratioLevel = "none";
-    const targetRate = parseFloat(std.drainRate) || null;
-    const drainMl = parseFloat(r.drainAmount);
-    const events = parseFloat(r.supplyEvents);
-    const ss = supplySettings.filter(s => {
-      const ssLine = s.lineNo || s.line || "V01";
-      return ssLine === recLine && s.settingDate <= supplyDateStr;
-    }).sort((a, b) => b.settingDate.localeCompare(a.standardDate || a.settingDate))[0];
-
-    if (ss && events > 0 && !isNaN(drainMl) && drainMl > 0) {
-      const perEventL = (parseFloat(ss.minutesPerEvent) / 60) * parseFloat(ss.flowRatePerBag);
-      const dailyL = perEventL * events;
-      if (dailyL > 0) {
-        ratio = (drainMl / 1000) / dailyL * 100;
-        if (targetRate) {
-          const ad = Math.abs(ratio - targetRate);
-          ratioLevel = ad <= 10 ? "ok" : ad <= 20 ? "warn" : "danger";
-        }
-      }
-    }
-    const ratioColor = ratioLevel === "ok" ? "#2e7d32" : ratioLevel === "warn" ? "#ef6c00" : ratioLevel === "danger" ? "#c62828" : "#999";
-
-    return {
-      level, ecDev, phDev,
-      supEc: rawEc !== undefined && rawEc !== null && rawEc !== "" ? rawEc : "-",
-      supPh: rawPh !== undefined && rawPh !== null && rawPh !== "" ? rawPh : "-",
-      statusText: level === "danger" ? "🚨 경고" : level === "warn" ? "⚠️ 주의" : "✅ 정상",
-      statusColor: level === "danger" ? "#c62828" : level === "warn" ? "#ef6c00" : "#2e7d32",
-      ratio: ratio === null ? null : Math.round(ratio * 10) / 10,
-      ratioColor, targetRate
-    };
+    return { level: "none", ecDev: "-", phDev: "-", supEc: "-", supPh: "-", statusText: "기준없음", statusColor: "#888", ratio: null, ratioColor: "#999", targetRate: null };
   }
 
   function zoneCompare(a, b) {
@@ -258,46 +66,127 @@
     const aNursery = a.includes("육") ? 1 : 0;
     const bNursery = b.includes("육") ? 1 : 0;
     if (aNursery !== bNursery) return aNursery - bNursery;
-    const aNum = a.match(/(\d+)/) ? parseInt(a.match(/(\d+)/)[1], 10) : 999;
-    const bNum = b.match(/(\d+)/) ? parseInt(b.match(/(\d+)/)[1], 10) : 999;
-    if (aNum !== bNum) return aNum - bNum;
-    return a.localeCompare(b, "ko");
+    return zoneCompare({ zoneName: a }, { zoneName: b });
   }
 
-  // ✅ 라인별 최근 공급횟수 프리필 맵 구축
-  function buildPrefillMap(records) {
-    const sorted = [...records].sort((a, b) => String(b.measureDate || "").localeCompare(String(a.measureDate || "")));
-    lastEventsByLine = {};
-    sorted.forEach(r => {
-      const line = r.line || "V01";
-      if (lastEventsByLine[line] === undefined && r.supplyEvents != null && r.supplyEvents !== "") {
-        lastEventsByLine[line] = r.supplyEvents;
+  // ✅ 실시간 배액율 & 급액량 계산 미리보기
+  function updateRealtimeRatioPreview() {
+    const wrap = document.getElementById("sampleRowWrap");
+    const previewEl = document.getElementById("realtimeRatioInfo");
+    if (!wrap || wrap.style.display === "none" || !previewEl) return;
+
+    const sel = document.getElementById("zoneSel");
+    const opt = sel ? sel.selectedOptions[0] : null;
+    const line = opt ? opt.dataset.line || "V01" : "V01";
+    const mDate = document.getElementById("measureDate").value || (window.toLocalYmd ? window.toLocalYmd(new Date()) : new Date().toISOString().slice(0, 10));
+    
+    const drainMl = parseFloat(document.getElementById("drainAmount").value);
+    const events = parseInt(document.getElementById("supplyEvents").value, 10);
+
+    if (isNaN(drainMl) || isNaN(events) || events <= 0 || drainMl <= 0) {
+      previewEl.style.display = "none";
+      return;
+    }
+
+    // 급액 설정 조회 (해당 라인의 최신 설정)
+    const ss = supplySettings
+      .filter((s) => {
+        const ssLine = s.lineNo || s.line || "V01";
+        return ssLine === line && s.settingDate <= mDate;
+      })
+      .sort((a, b) => b.settingDate.localeCompare(a.settingDate))[0];
+
+    // 목표 배액율 조회
+    const std = standards
+      .filter((s) => {
+        const stdLine = s.lineNo || s.line || "V01";
+        return stdLine === line && s.standardDate <= mDate;
+      })
+      .sort((a, b) => b.standardDate.localeCompare(a.standardDate))[0];
+
+    if (!ss) {
+      previewEl.style.display = "block";
+      previewEl.style.background = "#fff3e0";
+      previewEl.style.color = "#e65100";
+      previewEl.style.borderColor = "#ffe082";
+      previewEl.innerHTML = `⚠️ [${line}] 라인의 급액 설정(공급시간/유량)이 등록되지 않아 배액율을 계산할 수 없습니다.`;
+      return;
+    }
+
+    const perEventL = (parseFloat(ss.minutesPerEvent) / 60) * parseFloat(ss.flowRatePerBag);
+    const perEventMl = Math.round(perEventL * 1000);
+    const totalDailyL = perEventL * events;
+    const totalDailyMl = Math.round(totalDailyL * 1000);
+
+    const ratio = Math.round(((drainMl / 1000) / totalDailyL) * 1000) / 10;
+    const targetRate = std ? parseFloat(std.drainRate) : null;
+
+    let evalText = "정상";
+    let badgeColor = "#2e7d32";
+    if (targetRate) {
+      const diff = Math.abs(ratio - targetRate);
+      if (diff > 20) {
+        evalText = "🚨 경고 (초과)";
+        badgeColor = "#c62828";
+      } else if (diff > 10) {
+        evalText = "⚠️ 주의";
+        badgeColor = "#ef6c00";
+      } else {
+        evalText = "✅ 정상 (±10%p)";
+        badgeColor = "#2e7d32";
       }
-    });
+    }
+
+    previewEl.style.display = "block";
+    previewEl.style.background = "#f1f8f3";
+    previewEl.style.borderColor = "#c8e6c9";
+    previewEl.style.color = "#1b5e20";
+    previewEl.innerHTML = `
+      <strong>💧 배액율 실시간 계산 결과:</strong><br>
+      · 1회 급액량: <b>${perEventMl} mL</b> (${ss.minutesPerEvent}분 × ${ss.flowRatePerBag}L/h)<br>
+      · 어제 총 공급량: <b>${totalDailyMl.toLocaleString()} mL</b> (${perEventMl}mL × ${events}회)<br>
+      · 실측 배액량: <b>${drainMl.toLocaleString()} mL</b> ➔ 현재 배액율: <b style="font-size:12px; color:${badgeColor};">${ratio}%</b>
+      ${targetRate ? `(목표 ${targetRate}% 대비 <span style="font-weight:bold; color:${badgeColor};">${evalText}</span>)` : ""}
+    `;
   }
 
-  // ✅ 구역 선택 → 샘플 입력칸 자동 표시/숨김 + 횟수 프리필
+  // ✅ 구역 변경 시 샘플 측정 표시 & 전일 공급횟수 프리필
   function onZoneChange() {
     const sel = document.getElementById("zoneSel");
     const opt = sel ? sel.selectedOptions[0] : null;
     const wrap = document.getElementById("sampleRowWrap");
-    const use = !!(opt && opt.value && opt.dataset.sample === "true");
-    const line = opt ? (opt.dataset.line || "V01") : "V01";
-
-    if (wrap) wrap.style.display = use ? "block" : "none";
-    if (!use) {
-      ["sampleEc", "samplePh", "drainAmount", "supplyEvents"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = "";
-      });
-    } else {
-      // ✅ 신규 등록 시에만 해당 라인 최근 횟수 프리필
-      const editId = document.getElementById("editId").value;
-      const evEl = document.getElementById("supplyEvents");
-      if (!editId && evEl && lastEventsByLine[line] !== undefined) {
-        evEl.value = lastEventsByLine[line];
-      }
+    if (!opt || !opt.value) {
+      if (wrap) wrap.style.display = "none";
+      return;
     }
+    const hasSample = opt.dataset.sample === "true";
+    if (wrap) wrap.style.display = hasSample ? "block" : "none";
+
+    if (hasSample) {
+      const line = opt.dataset.line || "V01";
+      const editId = document.getElementById("editId").value;
+      const evInput = document.getElementById("supplyEvents");
+      if (!editId && evInput && !evInput.value && lastEventsByLine[line]) {
+        evInput.value = lastEventsByLine[line];
+      }
+      updateRealtimeRatioPreview();
+    }
+  }
+
+  // ✅ 라인별 최근 공급횟수 사전 집계
+  function scanRecentEvents(records) {
+    lastEventsByLine = {};
+    const sorted = [...records].sort((a, b) => {
+      const dtA = `${a.measureDate} ${a.measureTime || ""}`;
+      const dtB = `${b.measureDate} ${b.measureTime || ""}`;
+      return dtB.localeCompare(dtA);
+    });
+    sorted.forEach((r) => {
+      const line = r.line || "V01";
+      if (!lastEventsByLine[line] && r.supplyEvents && parseInt(r.supplyEvents, 10) > 0) {
+        lastEventsByLine[line] = r.supplyEvents;
+      }
+    });
   }
 
   async function loadRecords() {
@@ -305,53 +194,52 @@
     if (!database) return;
     const { collection, getDocs } = await getFs();
 
-    const s = document.getElementById("sDate").value;
-    const e = document.getElementById("eDate").value;
-    const z = document.getElementById("zFilter").value;
-    const ap = document.getElementById("approvedFilter").value;
+    const sDate = document.getElementById("sDate").value;
+    const eDate = document.getElementById("eDate").value;
+    const zFilter = document.getElementById("zFilter").value;
+    const appFilter = document.getElementById("approvedFilter").value;
 
     try {
       const snap = await getDocs(collection(database, "drain_records"));
-      let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      let list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-      buildPrefillMap(list); // ✅ 프리필 맵 갱신
+      scanRecentEvents(list);
 
-      if (s) list = list.filter(r => r.measureDate >= s);
-      if (e) list = list.filter(r => r.measureDate <= e);
-      if (z) list = list.filter(r => r.zoneName === z);
-      if (ap === "true") list = list.filter(r => r.approved === true);
-      else if (ap === "false") list = list.filter(r => r.approved !== true);
+      if (sDate) list = list.filter((r) => r.measureDate >= sDate);
+      if (eDate) list = list.filter((r) => r.measureDate <= eDate);
+      if (zFilter) list = list.filter((r) => r.zoneName === zFilter);
+      if (appFilter !== "") {
+        const isApp = appFilter === "true";
+        list = list.filter((r) => (r.approved === true) === isApp);
+      }
 
       list.sort((a, b) => {
-        const dCmp = String(b.measureDate || "").localeCompare(String(a.measureDate || ""));
-        if (dCmp !== 0) return dCmp;
-        const zCmp = zoneNameCompare(a.zoneName, b.zoneName);
-        if (zCmp !== 0) return zCmp;
-        return String(b.measureTime || "").localeCompare(String(a.measureTime || ""));
+        const dtA = `${a.measureDate} ${a.measureTime || ""}`;
+        const dtB = `${b.measureDate} ${b.measureTime || ""}`;
+        if (dtA !== dtB) return dtB.localeCompare(dtA);
+        return zoneNameCompare(a.zoneName, b.zoneName);
       });
 
       lastRecords = list;
-      renderList();
+      renderTable(list);
     } catch (e) {
-      console.error("기록 불러오기 오류:", e);
-      const tb = document.getElementById("listBody");
-      if (tb) tb.innerHTML = `<tr><td colspan="16" class="empty-box">오류: ${e.message}</td></tr>`;
+      console.error("기록 불러오기 오류", e);
     }
   }
 
-  function renderList() {
+  function renderTable(list) {
     const tb = document.getElementById("listBody");
     if (!tb) return;
 
-    if (!lastRecords.length) {
-      tb.innerHTML = `<tr><td colspan="16" class="empty-box">해당 기간에 기록이 없습니다.</td></tr>`;
+    if (!list.length) {
+      tb.innerHTML = `<tr><td colspan="16" class="empty-box">조회된 기록이 없습니다.</td></tr>`;
       return;
     }
 
     const editOk = canEdit();
     const apprOk = canApprove();
 
-    tb.innerHTML = lastRecords.map(r => {
+    tb.innerHTML = list.map((r) => {
       const st = checkStatus(r);
       let rowClass = "";
       if (st.level === "danger") rowClass = "class='danger-row'";
@@ -360,22 +248,26 @@
       const isApproved = r.approved === true;
       const zoneLine = `${r.zoneName || "-"} · ${r.line || "V01"}`;
 
-      const ratioCell = st.ratio == null
-        ? `<span style="color:#999;">-</span>`
-        : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
+      const ratioCell =
+        st.ratio == null
+          ? `<span style="color:#999;">-</span>`
+          : `<span style="color:${st.ratioColor};font-weight:bold;">${st.ratio}%</span>${st.targetRate ? `<br><span style="font-size:9px;color:#888;">목표 ${st.targetRate}%</span>` : ""}`;
+
+      const fEc = window.formatEc || ((v) => (v != null && v !== "" && !isNaN(v) ? parseFloat(v).toFixed(2) : "-"));
+      const fPh = window.formatPh || ((v) => (v != null && v !== "" && !isNaN(v) ? parseFloat(v).toFixed(2) : "-"));
 
       return `<tr ${rowClass}>
         <td>${r.measureDate || "-"}</td>
         <td>${r.measureTime || "-"}</td>
         <td>${zoneLine}</td>
-        <td>${r.drainEc || "-"}</td>
-        <td>${st.supEc}</td>
+        <td>${fEc(r.drainEc)}</td>
+        <td>${fEc(st.supEc)}</td>
         <td style="color:${st.statusColor}; font-weight:bold;">${st.ecDev}</td>
-        <td>${r.drainPh || "-"}</td>
-        <td>${st.supPh}</td>
+        <td>${fPh(r.drainPh)}</td>
+        <td>${fPh(st.supPh)}</td>
         <td style="color:${st.statusColor}; font-weight:bold;">${st.phDev}</td>
-        <td>${r.sampleEc || "-"}</td>
-        <td>${r.samplePh || "-"}</td>
+        <td>${fEc(r.sampleEc)}</td>
+        <td>${fPh(r.samplePh)}</td>
         <td>${r.bedTemp != null ? r.bedTemp + "℃" : "-"}</td>
         <td>${r.drainAmount || "-"}${r.supplyEvents ? ` <span style="font-size:9px;color:#888;">(${r.supplyEvents}회)</span>` : ""}</td>
         <td>${ratioCell}</td>
@@ -415,16 +307,50 @@
       measureDate,
       measureTime,
       zoneName,
-      line: opt ? (opt.dataset.line || "V01") : "V01",
+      line: opt ? opt.dataset.line || "V01" : "V01",
       drainEc: parseFloat(drainEc),
       drainPh: parseFloat(drainPh),
       bedTemp: bedTemp ? parseFloat(bedTemp) : null,
       sampleEc: sampleOn && document.getElementById("sampleEc").value ? parseFloat(document.getElementById("sampleEc").value) : null,
       samplePh: sampleOn && document.getElementById("samplePh").value ? parseFloat(document.getElementById("samplePh").value) : null,
       drainAmount: sampleOn && document.getElementById("drainAmount").value ? parseFloat(document.getElementById("drainAmount").value) : null,
-      supplyEvents: sampleOn && supplyEventsVal ? parseInt(supplyEventsVal) : null,
+      supplyEvents: sampleOn && supplyEventsVal ? parseInt(supplyEventsVal, 10) : null,
       updatedAt: new Date().toISOString()
     };
+
+    // ⚠️ [극단적 오입력 검증] 현장 측정 범위(오타) 점검
+    const warnings = [];
+    if (data.drainEc < 0.3 || data.drainEc > 4.5) {
+      warnings.push(`• 배액 EC: ${data.drainEc} (통상 0.8 ~ 3.5)`);
+    }
+    if (data.drainPh < 4.0 || data.drainPh > 8.5) {
+      warnings.push(`• 배액 pH: ${data.drainPh} (통상 5.0 ~ 7.5)`);
+    }
+    if (data.sampleEc !== null && (data.sampleEc < 0.3 || data.sampleEc > 4.5)) {
+      warnings.push(`• 샘플 EC: ${data.sampleEc} (통상 0.8 ~ 3.5)`);
+    }
+    if (data.samplePh !== null && (data.samplePh < 4.0 || data.samplePh > 8.5)) {
+      warnings.push(`• 샘플 pH: ${data.samplePh} (통상 5.0 ~ 7.5)`);
+    }
+    if (data.bedTemp !== null && (data.bedTemp < 3 || data.bedTemp > 45)) {
+      warnings.push(`• 배지온도: ${data.bedTemp}℃ (통상 10 ~ 35℃)`);
+    }
+    if (data.drainAmount !== null && (data.drainAmount < 0 || data.drainAmount > 8000)) {
+      warnings.push(`• 배액량: ${data.drainAmount}mL`);
+    }
+    if (data.supplyEvents !== null && (data.supplyEvents < 1 || data.supplyEvents > 40)) {
+      warnings.push(`• 전일 공급횟수: ${data.supplyEvents}회`);
+    }
+
+    if (warnings.length > 0) {
+      const confirmMsg =
+        "⚠️ [입력값 주의 알림]\n일반적인 측정 범위를 벗어난 수치가 있습니다.\n오타가 아닌지 확인해주세요:\n\n" +
+        warnings.join("\n") +
+        "\n\n이 값 그대로 저장하시겠습니까?";
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+    }
 
     const database = await ensureDb();
     if (!database) return;
@@ -449,7 +375,7 @@
 
   function editRec(id) {
     if (!canEdit()) return alert("수정 권한이 없습니다.");
-    const r = lastRecords.find(x => x.id === id);
+    const r = lastRecords.find((x) => x.id === id);
     if (!r) return;
 
     document.getElementById("editId").value = id;
@@ -457,62 +383,72 @@
     document.getElementById("measureTime").value = r.measureTime || "";
 
     const zoneSel = document.getElementById("zoneSel");
-    zoneSel.value = r.zoneName || "";
-    onZoneChange();
+    if (zoneSel) {
+      zoneSel.value = r.zoneName || "";
+      onZoneChange();
+    }
 
-    document.getElementById("drainEc").value = r.drainEc ?? "";
-    document.getElementById("drainPh").value = r.drainPh ?? "";
-    document.getElementById("sampleEc").value = r.sampleEc ?? "";
-    document.getElementById("samplePh").value = r.samplePh ?? "";
-    document.getElementById("bedTemp").value = r.bedTemp ?? "";
-    document.getElementById("drainAmount").value = r.drainAmount ?? "";
-    document.getElementById("supplyEvents").value = r.supplyEvents ?? "";
+    document.getElementById("drainEc").value = r.drainEc != null ? r.drainEc : "";
+    document.getElementById("drainPh").value = r.drainPh != null ? r.drainPh : "";
+    document.getElementById("bedTemp").value = r.bedTemp != null ? r.bedTemp : "";
+
+    const sampleRow = document.getElementById("sampleRowWrap");
+    if (sampleRow && sampleRow.style.display !== "none") {
+      document.getElementById("sampleEc").value = r.sampleEc != null ? r.sampleEc : "";
+      document.getElementById("samplePh").value = r.samplePh != null ? r.samplePh : "";
+      document.getElementById("drainAmount").value = r.drainAmount != null ? r.drainAmount : "";
+      document.getElementById("supplyEvents").value = r.supplyEvents != null ? r.supplyEvents : "";
+    }
 
     const ft = document.getElementById("formTitle");
     if (ft) ft.textContent = "✏️ 배액 기록 수정";
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    const formCard = document.getElementById("recordFormCard");
+    if (formCard) formCard.scrollIntoView({ behavior: "smooth" });
   }
 
-  async function toggleApprove(id, current) {
-    if (!canApprove()) return alert("승인 권한이 없습니다.");
+  async function toggleApprove(id, currentApproved) {
+    if (!canApprove()) return alert("승인/승인취소 권한이 없습니다.");
     const database = await ensureDb();
     if (!database) return;
-    const { doc, setDoc } = await getFs();
+    const { doc, updateDoc } = await getFs();
+
     try {
-      await setDoc(doc(database, "drain_records", id), {
-        approved: !current,
+      await updateDoc(doc(database, "drain_records", id), {
+        approved: !currentApproved,
         approvedAt: new Date().toISOString()
-      }, { merge: true });
-      alert(!current ? "✅ 승인되었습니다!" : "승인이 취소되었습니다.");
+      });
       await loadRecords();
     } catch (e) {
-      alert("❌ 처리 실: " + e.message);
+      alert("❌ 처리 실패: " + e.message);
     }
   }
 
   async function deleteRec(id) {
-    if (!canApprove()) return alert("삭제 권한이 없습니다.");
-    if (!confirm("정말 삭제하시겠습니까?")) return;
+    if (!canApprove()) return alert("삭제 권한이 없습니다 (최고관리자·매니저만 가능).");
+    if (!confirm("정말 삭제하시겠습니까? 복구할 수 없습니다.")) return;
+
     const database = await ensureDb();
     if (!database) return;
     const { doc, deleteDoc } = await getFs();
+
     try {
       await deleteDoc(doc(database, "drain_records", id));
-      alert("✅ 삭제되었습니다!");
+      alert("✅ 삭제되었습니다.");
       await loadRecords();
     } catch (e) {
-      alert("❌ 삭제 실: " + e.message);
+      alert("❌ 삭제 실패: " + e.message);
     }
   }
 
   function resetForm() {
     document.getElementById("editId").value = "";
-    document.getElementById("measureDate").value = toLocalYmd(new Date()); // ✅ 오늘 (로컬 문자열)
+    document.getElementById("measureDate").value = window.toLocalYmd ? window.toLocalYmd(new Date()) : new Date().toISOString().slice(0, 10);
     document.getElementById("measureTime").value = new Date().toTimeString().slice(0, 5);
     const zoneSel = document.getElementById("zoneSel");
     if (zoneSel) zoneSel.value = "";
     onZoneChange();
-    ["drainEc", "drainPh", "bedTemp", "sampleEc", "samplePh", "drainAmount", "supplyEvents"].forEach(id => {
+    ["drainEc", "drainPh", "bedTemp", "sampleEc", "samplePh", "drainAmount", "supplyEvents"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.value = "";
     });
@@ -521,22 +457,7 @@
   }
 
   function bindEvents() {
-    document.addEventListener("click", e => {
-      if (e.target.id === "hamBtn" || e.target.closest("#hamBtn")) {
-        document.getElementById("sidebar").classList.toggle("open");
-        document.getElementById("overlay").classList.toggle("show");
-      }
-      if (e.target.id === "sidebarLogoutBtn" || e.target.closest("#sidebarLogoutBtn")) {
-        e.preventDefault();
-        if (confirm("로그아웃 하시겠습니까?")) {
-          localStorage.removeItem("user");
-          localStorage.removeItem("userRole");
-          location.href = "index.html";
-        }
-      }
-    });
-
-    ["sDate", "eDate", "zFilter", "approvedFilter"].forEach(id => {
+    ["sDate", "eDate", "zFilter", "approvedFilter"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.addEventListener("change", loadRecords);
     });
@@ -544,29 +465,39 @@
     const zoneSel = document.getElementById("zoneSel");
     if (zoneSel) zoneSel.addEventListener("change", onZoneChange);
 
+    // 💧 배액량 및 공급횟수 입력 시 실시간 계산 미리보기 바인딩
+    ["drainAmount", "supplyEvents"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("input", updateRealtimeRatioPreview);
+    });
+    const mDateEl = document.getElementById("measureDate");
+    if (mDateEl) mDateEl.addEventListener("change", updateRealtimeRatioPreview);
+
     const saveBtn = document.getElementById("saveBtn");
     const resetBtn = document.getElementById("resetBtn");
     if (saveBtn) saveBtn.addEventListener("click", saveRecord);
-    if (resetBtn) resetBtn.addEventListener("click", resetForm);
+    if (resetBtn) resetBtn.addEventListener("click", () => {
+      resetForm();
+      const p = document.getElementById("realtimeRatioInfo");
+      if (p) p.style.display = "none";
+    });
   }
 
   async function init() {
-    const auth = checkAuth();
+    const auth = window.checkAuth ? window.checkAuth() : null;
     if (!auth) return;
+    userRole = window.normalizeRole ? window.normalizeRole(auth.userRole) : auth.userRole;
 
     bindEvents();
-    await loadFarmInfo();
-    loadWeather();
 
-    // ✅ 조회 기본기간: 어제 ~ 오늘 (로컬 날짜 문자열로 직접 설정 → 시간대 무관)
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     const eDateEl = document.getElementById("eDate");
     const sDateEl = document.getElementById("sDate");
-    if (eDateEl) eDateEl.value = toLocalYmd(today);
-    if (sDateEl) sDateEl.value = toLocalYmd(yesterday);
+    if (eDateEl) eDateEl.value = window.toLocalYmd ? window.toLocalYmd(today) : today.toISOString().slice(0, 10);
+    if (sDateEl) sDateEl.value = window.toLocalYmd ? window.toLocalYmd(yesterday) : yesterday.toISOString().slice(0, 10);
 
     const database = await ensureDb();
     if (!database) return;
@@ -578,9 +509,9 @@
         getDocs(collection(database, "supply_standards")),
         getDocs(collection(database, "supply_settings")).catch(() => null)
       ]);
-      zoneList = zoneSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort(zoneCompare);
-      standards = stdSnap.docs.map(d => d.data());
-      supplySettings = ssSnap ? ssSnap.docs.map(d => ({ id: d.id, ...d.data() })) : [];
+      zoneList = zoneSnap.docs.map((d) => ({ id: d.id, ...d.data() })).sort(zoneCompare);
+      standards = stdSnap.docs.map((d) => d.data());
+      supplySettings = ssSnap ? ssSnap.docs.map((d) => ({ id: d.id, ...d.data() })) : [];
     } catch (e) {
       console.log("기준데이터 불러오기 오류:", e);
     }
@@ -590,7 +521,7 @@
     if (sel && !sel.querySelector('option[value=""]')) {
       sel.insertAdjacentHTML("afterbegin", `<option value="">-- 구역 선택 --</option>`);
     }
-    zoneList.forEach(z => {
+    zoneList.forEach((z) => {
       const line = z.liquidLine || z.line || "V01";
       const hasSample = z.hasSampleData ? "true" : "false";
       if (sel) sel.innerHTML += `<option data-line="${line}" data-sample="${hasSample}" value="${z.zoneName}">${z.zoneName} · ${line}</option>`;
@@ -599,10 +530,7 @@
     if (sel) sel.value = "";
     onZoneChange();
 
-    // ✅ 등록폼 기본값: 측정일자 = 오늘, 측정시간 = 현재
-    document.getElementById("measureDate").value = toLocalYmd(new Date());
-    document.getElementById("measureTime").value = new Date().toTimeString().slice(0, 5);
-
+    resetForm();
     await loadRecords();
   }
 
