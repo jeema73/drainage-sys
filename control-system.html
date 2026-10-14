@@ -122,23 +122,24 @@
   <div class="app-layout">
     <div class="right-column">
       <main class="content-wrapper">
-        <div class="control-container" id="adminArea" style="display:none;">
+          <div class="control-container" id="adminArea" style="display:none;">
           <div class="control-header-bar">
             <div class="control-header-title">
               <span>🎛️ 복합환경제어기 모니터링 & 제어</span>
-              <span class="control-status-badge">● 실시간 연결</span>
+              <span class="control-status-badge" id="connStatusBadge">● 실시간 연결</span>
             </div>
             <div class="control-actions">
-              <button type="button" class="btn-primary" onclick="reloadFrame()" style="padding:4px 10px; font-size:10.5px;">🔄 새로고침</button>
-              <a href="http://gbk2025.iptime.org:8080/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding:4px 10px; font-size:10.5px; text-decoration:none;">↗️ 새 창으로 열기</a>
+              <button type="button" class="btn-primary" onclick="reloadFrame()" style="padding:4px 9px; font-size:10.5px;">🔄 새로고침</button>
+              <button type="button" class="btn-secondary" onclick="openUrlSetting()" style="padding:4px 9px; font-size:10.5px; background:#546e7a; color:#fff;">⚙️ 주소설정</button>
+              <a href="http://gbk2025.iptime.org:8080/" id="extLinkBtn" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding:4px 9px; font-size:10.5px; text-decoration:none;">↗️ 새 창으로 열기</a>
             </div>
           </div>
 
           <div class="iframe-wrapper">
             <div class="mixed-content-notice" id="noticeBanner">
-              ⚠️ 브라우저 보안(HTTPS) 정책으로 인해 내부 화면이 표시되지 않는 경우, 상단의 <strong>[↗️ 새 창으로 열기]</strong> 버튼을 이용해 주세요.
+              ⚠️ 브라우저 보안(HTTPS) 정책으로 인해 내부 화면이 표시되지 않는 경우, 상단의 <strong>[⚙️ 주소설정]</strong>에서 Cloudflare HTTPS 주소를 등록하거나 <strong>[↗️ 새 창으로 열기]</strong>를 이용해 주세요.
             </div>
-            <iframe id="controlFrame" src="http://gbk2025.iptime.org:8080/" title="복합환경제어기"></iframe>
+            <iframe id="controlFrame" src="" title="복합환경제어기" allow="fullscreen"></iframe>
           </div>
         </div>
       </main>
@@ -147,6 +148,40 @@
 
   <script src="common.js" defer></script>
   <script>
+    const DEFAULT_HTTP_URL = "http://gbk2025.iptime.org:8080/";
+    const DEFAULT_HTTPS_PROXY = "https://gbk-control.jeema73.workers.dev/";
+
+    function getTargetUrl() {
+      const saved = localStorage.getItem("control_system_url");
+      if (saved) return saved;
+      // HTTPS 환경이면 기본적으로 HTTPS 프록시 권장
+      if (location.protocol === "https:") {
+        return DEFAULT_HTTPS_PROXY;
+      }
+      return DEFAULT_HTTP_URL;
+    }
+
+    function initFrame() {
+      const target = getTargetUrl();
+      const iframe = document.getElementById("controlFrame");
+      const extLink = document.getElementById("extLinkBtn");
+      const banner = document.getElementById("noticeBanner");
+
+      if (iframe) iframe.src = target;
+      if (extLink) extLink.href = target.startsWith("http:") ? target : DEFAULT_HTTP_URL;
+
+      // HTTPS 프록시가 적용되어 있으면 Mixed Content 경고 배너 자동 숨김
+      if (banner) {
+        if (target.startsWith("https:")) {
+          banner.style.display = "none";
+        } else if (location.protocol === "https:") {
+          banner.style.display = "block";
+        } else {
+          banner.style.display = "none";
+        }
+      }
+    }
+
     function reloadFrame() {
       const iframe = document.getElementById("controlFrame");
       if (iframe) {
@@ -154,17 +189,31 @@
       }
     }
 
+    function openUrlSetting() {
+      const current = getTargetUrl();
+      const input = prompt(
+        "🎛️ 복합환경제어기 접속 주소(또는 Cloudflare HTTPS 프록시 주소)를 입력하세요:\n\n예: https://gbk-control.jeema73.workers.dev/",
+        current
+      );
+      if (input !== null) {
+        const trimmed = input.trim();
+        if (trimmed) {
+          localStorage.setItem("control_system_url", trimmed);
+          alert("✅ 접속 주소가 설정되었습니다.\n화면을 다시 불러옵니다.");
+          initFrame();
+        } else {
+          localStorage.removeItem("control_system_url");
+          alert("초기 기본값으로 복원되었습니다.");
+          initFrame();
+        }
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
-      // 로그인 여부 검증
       if (typeof window.checkAuth === "function") {
         window.checkAuth(["admin", "manager", "worker", "guest"]);
       }
-
-      // HTTPS 환경 접속 시 mixed content 주의 안내 띄우기
-      if (location.protocol === "https:") {
-        const banner = document.getElementById("noticeBanner");
-        if (banner) banner.style.display = "block";
-      }
+      initFrame();
     });
   </script>
 </body>
